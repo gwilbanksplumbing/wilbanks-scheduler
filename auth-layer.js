@@ -547,10 +547,10 @@
   function injectLogoutButton() {
     document.getElementById('wc-logout-btn')?.remove();
 
-    function buildBtn() {
+    // Build a sidebar-style logout button (dashboard desktop)
+    function buildSidebarBtn() {
       const btn = document.createElement('button');
       btn.id = 'wc-logout-btn';
-      btn.setAttribute('data-testid', 'button-logout');
       btn.innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -572,34 +572,110 @@
       });
       btn.addEventListener('mouseenter', () => btn.style.background = 'rgba(239,68,68,0.1)');
       btn.addEventListener('mouseleave', () => btn.style.background = 'transparent');
-      btn.addEventListener('click', () => {
-        if (confirm('Sign out of Wilbanks Company?')) logout();
-      });
+      btn.addEventListener('click', doLogout);
       return btn;
     }
 
-    // Try to inject into sidebar next to theme toggle button
-    function tryInject() {
-      // Desktop sidebar: find the theme toggle button and insert logout after it
+    // Build a floating button fallback (field tech mobile)
+    function buildFloatingBtn() {
+      const btn = document.createElement('button');
+      btn.id = 'wc-logout-btn';
+      btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16,17 21,12 16,7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Sign Out
+      `;
+      Object.assign(btn.style, {
+        position: 'fixed', bottom: '24px', right: '16px', zIndex: '9998',
+        display: 'flex', alignItems: 'center', gap: '8px',
+        padding: '10px 16px',
+        background: 'rgba(239,68,68,0.15)',
+        border: '1px solid rgba(239,68,68,0.4)',
+        borderRadius: '20px', cursor: 'pointer',
+        fontSize: '14px', fontWeight: '600',
+        color: '#ef4444',
+        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+        WebkitTapHighlightColor: 'transparent',
+      });
+      btn.addEventListener('click', doLogout);
+      return btn;
+    }
+
+    function doLogout() {
+      if (confirm('Sign out of Wilbanks Company?')) logout();
+    }
+
+    // Strategy 1: Dashboard desktop sidebar — inject below theme toggle
+    function tryInjectSidebar() {
       const themeBtn = document.querySelector('[data-testid="button-toggle-theme"]');
       if (themeBtn && !document.getElementById('wc-logout-btn')) {
-        const container = themeBtn.parentElement;
-        if (container) {
-          container.appendChild(buildBtn());
-          return true;
+        themeBtn.parentElement?.appendChild(buildSidebarBtn());
+        return true;
+      }
+      return false;
+    }
+
+    // Strategy 2: Field tech — hijack the existing LogOut icon button in the header
+    // The compiled app already has a LogOut SVG button — rewire it
+    function tryHijackLogoutBtn() {
+      if (document.getElementById('wc-logout-btn')) return true;
+      // Find button containing LogOut SVG path (M9 21H5)
+      const buttons = document.querySelectorAll('button');
+      for (const btn of buttons) {
+        const svg = btn.querySelector('svg');
+        if (!svg) continue;
+        const paths = btn.querySelectorAll('path, polyline, line');
+        for (const p of paths) {
+          const d = p.getAttribute('d') || p.getAttribute('points') || '';
+          if (d.includes('M9 21H5') || d.includes('16 17 21 12')) {
+            // This is the LogOut button — rewire it
+            btn.id = 'wc-logout-btn';
+            // Clone to remove old listeners
+            const newBtn = btn.cloneNode(true);
+            newBtn.id = 'wc-logout-btn';
+            // Style it red to indicate logout
+            newBtn.style.color = '#ef4444';
+            newBtn.addEventListener('click', doLogout);
+            btn.parentNode?.replaceChild(newBtn, btn);
+            return true;
+          }
         }
       }
       return false;
     }
 
-    // Try immediately, then watch for React to mount
+    // Strategy 3: Floating button fallback if nothing else works
+    function injectFloating() {
+      if (!document.getElementById('wc-logout-btn')) {
+        document.body.appendChild(buildFloatingBtn());
+      }
+    }
+
+    function tryInject() {
+      if (tryInjectSidebar()) return true;
+      if (tryHijackLogoutBtn()) return true;
+      return false;
+    }
+
     if (!tryInject()) {
+      let attempts = 0;
       const observer = new MutationObserver(() => {
-        if (tryInject()) observer.disconnect();
+        attempts++;
+        if (tryInject()) { observer.disconnect(); return; }
+        if (attempts > 200) {
+          observer.disconnect();
+          injectFloating(); // final fallback
+        }
       });
       observer.observe(document.body, { childList: true, subtree: true });
-      // Stop watching after 10s to avoid leaks
-      setTimeout(() => observer.disconnect(), 10000);
+      setTimeout(() => {
+        observer.disconnect();
+        injectFloating();
+      }, 8000);
     }
   }
 
