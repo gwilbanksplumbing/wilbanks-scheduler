@@ -609,7 +609,7 @@
       if (confirm('Sign out of Wilbanks Company?')) logout();
     }
 
-    // Strategy 1: Dashboard desktop sidebar — inject below theme toggle
+    // Strategy 1a: Dashboard desktop sidebar — inject below theme toggle
     function tryInjectSidebar() {
       const themeBtn = document.querySelector('[data-testid="button-toggle-theme"]');
       if (themeBtn && !document.getElementById('wc-logout-btn')) {
@@ -617,6 +617,19 @@
         return true;
       }
       return false;
+    }
+
+    // Strategy 1b: Dashboard mobile menu — inject Sign Out at bottom of open dropdown
+    function tryInjectMobileMenu() {
+      // The mobile dropdown has class 'md:hidden fixed top-[57px]'
+      const mobileMenu = document.querySelector('.fixed.top-\\[57px\\]');
+      if (mobileMenu && !mobileMenu.querySelector('#wc-logout-mobile')) {
+        const btn = buildSidebarBtn();
+        btn.id = 'wc-logout-mobile';
+        btn.style.marginTop = '4px';
+        btn.style.marginBottom = '4px';
+        mobileMenu.appendChild(btn);
+      }
     }
 
     // Strategy 2: Field tech — hijack the existing LogOut icon button in the header
@@ -661,22 +674,27 @@
       return false;
     }
 
-    if (!tryInject()) {
-      let attempts = 0;
-      const observer = new MutationObserver(() => {
-        attempts++;
-        if (tryInject()) { observer.disconnect(); return; }
-        if (attempts > 200) {
-          observer.disconnect();
-          injectFloating(); // final fallback
-        }
-      });
-      observer.observe(document.body, { childList: true, subtree: true });
-      setTimeout(() => {
-        observer.disconnect();
+    let sidebarDone = tryInject();
+    let attempts = 0;
+
+    // Keep observer running permanently to catch mobile menu open/close
+    const observer = new MutationObserver(() => {
+      attempts++;
+      if (!sidebarDone) {
+        sidebarDone = tryInject();
+      }
+      // Always try to inject into mobile menu whenever DOM changes (menu opens)
+      tryInjectMobileMenu();
+      if (attempts > 500) observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Floating fallback after 8s if nothing worked at all
+    setTimeout(() => {
+      if (!document.getElementById('wc-logout-btn') && !document.getElementById('wc-logout-mobile')) {
         injectFloating();
-      }, 8000);
-    }
+      }
+    }, 8000);
   }
 
   function logout() {
@@ -684,6 +702,7 @@
     currentUser = null;
     window.__WC_USER = null;
     document.getElementById('wc-logout-btn')?.remove();
+    document.getElementById('wc-logout-mobile')?.remove();
     renderLogin();
     // Hide app
     const root = document.getElementById("root");
