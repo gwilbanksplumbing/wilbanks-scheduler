@@ -557,17 +557,21 @@
         if (a.textContent?.trim().includes('Archive')) archiveLink = a;
       }
       if (archiveLink && !document.getElementById('wc-users-nav-desktop')) {
-        const usersLink = archiveLink.cloneNode(true);
+        // Clone just for the classes/attributes, then rebuild children cleanly
+        const usersLink = archiveLink.cloneNode(false);
         usersLink.id = 'wc-users-nav-desktop';
         usersLink.removeAttribute('href');
+        usersLink.removeAttribute('data-testid');
         usersLink.style.cursor = 'pointer';
-        // Replace icon SVG with users icon
-        const svg = usersLink.querySelector('svg');
-        if (svg) svg.outerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
-        // Replace text
-        const span = usersLink.querySelector('span');
-        if (span) span.textContent = 'Users';
-        else usersLink.appendChild(Object.assign(document.createElement('span'), { textContent: 'Users' }));
+        usersLink.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span>Users</span>
+        `;
         usersLink.addEventListener('click', () => openUsersPanel());
         archiveLink.parentElement?.insertBefore(usersLink, archiveLink.nextSibling);
         return true;
@@ -962,8 +966,13 @@
           currentUser = user;
           window.__WC_USER = user;
           window.__WC_LOGOUT = logout;
-          // Token valid — show app directly
+          // Token valid — show app and inject UI elements
           if (root) root.style.display = "";
+          // Wait for React to mount then inject
+          setTimeout(() => {
+            injectLogoutButton();
+            if (user.role === 'admin') injectUsersNav();
+          }, 1500);
           return;
         }
       } catch {}
