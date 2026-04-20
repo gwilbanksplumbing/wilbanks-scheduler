@@ -538,10 +538,239 @@
 
   function launchApp() {
     dismissOverlay();
-    // Expose user globally for React to read
     window.__WC_USER = currentUser;
     window.__WC_LOGOUT = logout;
     injectLogoutButton();
+    // Only inject Users nav for admin users on the dashboard
+    if (currentUser?.role === 'admin') {
+      injectUsersNav();
+    }
+  }
+
+  // ── User Management ────────────────────────────────────────────────────────
+  function injectUsersNav() {
+    function tryInject() {
+      // Desktop sidebar: find Archive nav link and add Users after it
+      const navLinks = document.querySelectorAll('nav a, aside a');
+      let archiveLink = null;
+      for (const a of navLinks) {
+        if (a.textContent?.trim().includes('Archive')) archiveLink = a;
+      }
+      if (archiveLink && !document.getElementById('wc-users-nav-desktop')) {
+        const usersLink = archiveLink.cloneNode(true);
+        usersLink.id = 'wc-users-nav-desktop';
+        usersLink.removeAttribute('href');
+        usersLink.style.cursor = 'pointer';
+        // Replace icon SVG with users icon
+        const svg = usersLink.querySelector('svg');
+        if (svg) svg.outerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+        // Replace text
+        const span = usersLink.querySelector('span');
+        if (span) span.textContent = 'Users';
+        else usersLink.appendChild(Object.assign(document.createElement('span'), { textContent: 'Users' }));
+        usersLink.addEventListener('click', () => openUsersPanel());
+        archiveLink.parentElement?.insertBefore(usersLink, archiveLink.nextSibling);
+        return true;
+      }
+      return false;
+    }
+
+    function tryInjectMobile() {
+      const mobileMenu = Array.from(document.querySelectorAll('div')).find(el =>
+        el.className?.includes?.('top-[57px]')
+      );
+      if (mobileMenu && !mobileMenu.querySelector('#wc-users-nav-mobile')) {
+        const links = mobileMenu.querySelectorAll('a');
+        let archiveLink = null;
+        for (const a of links) {
+          if (a.textContent?.trim().includes('Archive')) archiveLink = a;
+        }
+        if (archiveLink) {
+          const btn = document.createElement('button');
+          btn.id = 'wc-users-nav-mobile';
+          btn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span>Users</span>
+          `;
+          // Match the style of existing nav links
+          const existingStyle = window.getComputedStyle(archiveLink);
+          Object.assign(btn.style, {
+            display: 'flex', alignItems: 'center', gap: '12px',
+            width: '100%', padding: '10px 12px',
+            background: 'transparent', border: 'none',
+            borderRadius: '6px', cursor: 'pointer',
+            fontSize: '14px', fontWeight: '500',
+            color: 'inherit', fontFamily: 'inherit',
+          });
+          btn.addEventListener('click', () => openUsersPanel());
+          archiveLink.parentElement?.insertBefore(btn, archiveLink.nextSibling);
+        }
+      }
+    }
+
+    if (!tryInject()) {
+      const obs = new MutationObserver(() => {
+        tryInject();
+        tryInjectMobile();
+      });
+      obs.observe(document.body, { childList: true, subtree: true });
+      setTimeout(() => obs.disconnect(), 10000);
+    }
+
+    // Keep watching for mobile menu opens
+    const mobileObs = new MutationObserver(() => tryInjectMobile());
+    mobileObs.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => mobileObs.disconnect(), 300000);
+  }
+
+  function openUsersPanel() {
+    if (document.getElementById('wc-users-panel')) return;
+    injectStyles();
+
+    const panel = document.createElement('div');
+    panel.id = 'wc-users-panel';
+    Object.assign(panel.style, {
+      position: 'fixed', inset: '0', zIndex: '99990',
+      background: 'rgba(0,0,0,0.7)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center',
+      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+    });
+    panel.innerHTML = `
+      <div style="background:#18181b;border:1px solid #27272a;border-radius:16px;width:100%;max-width:560px;margin:16px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.6)">
+        <div style="padding:20px 24px 16px;border-bottom:1px solid #27272a;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+          <div>
+            <h2 style="margin:0;font-size:18px;font-weight:700;color:#fafafa">User Management</h2>
+            <p style="margin:4px 0 0;font-size:13px;color:#71717a">Manage who can access the apps</p>
+          </div>
+          <button id="wc-users-close" style="background:transparent;border:none;color:#71717a;cursor:pointer;font-size:20px;padding:4px 8px;line-height:1">&times;</button>
+        </div>
+        <div style="padding:20px 24px;border-bottom:1px solid #27272a;flex-shrink:0">
+          <h3 style="margin:0 0 14px;font-size:14px;font-weight:600;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.05em">Add New User</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label style="display:block;font-size:12px;color:#71717a;margin-bottom:5px">USERNAME</label>
+              <input id="wc-new-username" placeholder="e.g. john" style="width:100%;box-sizing:border-box;background:#09090b;border:1px solid #3f3f46;border-radius:8px;padding:9px 12px;font-size:14px;color:#fafafa;outline:none" />
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;color:#71717a;margin-bottom:5px">ROLE</label>
+              <select id="wc-new-role" style="width:100%;box-sizing:border-box;background:#09090b;border:1px solid #3f3f46;border-radius:8px;padding:9px 12px;font-size:14px;color:#fafafa;outline:none">
+                <option value="tech">Field Tech</option>
+                <option value="admin">Admin (Dashboard)</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="display:block;font-size:12px;color:#71717a;margin-bottom:5px">DISPLAY NAME (optional)</label>
+            <input id="wc-new-displayname" placeholder="Full name shown in app" style="width:100%;box-sizing:border-box;background:#09090b;border:1px solid #3f3f46;border-radius:8px;padding:9px 12px;font-size:14px;color:#fafafa;outline:none" />
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1">
+              <label style="display:block;font-size:12px;color:#71717a;margin-bottom:5px">TEMP PASSWORD</label>
+              <input id="wc-new-password" type="text" value="Wilbanks1!" style="width:100%;box-sizing:border-box;background:#09090b;border:1px solid #3f3f46;border-radius:8px;padding:9px 12px;font-size:14px;color:#fafafa;outline:none" />
+            </div>
+            <button id="wc-add-user-btn" style="background:#3b82f6;border:none;color:#fff;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;margin-top:18px">Add User</button>
+          </div>
+          <div id="wc-add-error" style="display:none;margin-top:8px;background:#3f1212;border:1px solid #7f1d1d;color:#fca5a5;border-radius:6px;padding:8px 12px;font-size:13px"></div>
+          <div id="wc-add-success" style="display:none;margin-top:8px;background:#14532d;border:1px solid #166534;color:#86efac;border-radius:6px;padding:8px 12px;font-size:13px"></div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:16px 24px" id="wc-user-list-container">
+          <h3 style="margin:0 0 14px;font-size:14px;font-weight:600;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.05em">Existing Users</h3>
+          <div id="wc-user-list"><div style="color:#52525b;font-size:14px">Loading...</div></div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(panel);
+    document.getElementById('wc-users-close').addEventListener('click', () => panel.remove());
+    panel.addEventListener('click', e => { if (e.target === panel) panel.remove(); });
+
+    loadUserList();
+
+    document.getElementById('wc-add-user-btn').addEventListener('click', async () => {
+      const username = document.getElementById('wc-new-username').value.trim().toLowerCase();
+      const role = document.getElementById('wc-new-role').value;
+      const displayName = document.getElementById('wc-new-displayname').value.trim();
+      const password = document.getElementById('wc-new-password').value.trim();
+      const errEl = document.getElementById('wc-add-error');
+      const okEl = document.getElementById('wc-add-success');
+      errEl.style.display = 'none';
+      okEl.style.display = 'none';
+
+      if (!username) { errEl.textContent = 'Username is required.'; errEl.style.display = 'block'; return; }
+      if (!password || password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
+
+      const btn = document.getElementById('wc-add-user-btn');
+      btn.disabled = true; btn.textContent = 'Adding...';
+
+      try {
+        const res = await fetch(API + '/api/auth/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _token },
+          body: JSON.stringify({ username, password, role, displayName: displayName || undefined }),
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || 'Failed to create user'; errEl.style.display = 'block'; }
+        else {
+          okEl.textContent = `User "${username}" created. Temp password: ${password} (they will be asked to change it on first login)`;
+          okEl.style.display = 'block';
+          document.getElementById('wc-new-username').value = '';
+          document.getElementById('wc-new-displayname').value = '';
+          document.getElementById('wc-new-password').value = 'Wilbanks1!';
+          loadUserList();
+        }
+      } catch { errEl.textContent = 'Connection error.'; errEl.style.display = 'block'; }
+      btn.disabled = false; btn.textContent = 'Add User';
+    });
+  }
+
+  async function loadUserList() {
+    const container = document.getElementById('wc-user-list');
+    if (!container) return;
+    container.innerHTML = '<div style="color:#52525b;font-size:14px">Loading...</div>';
+    try {
+      const res = await fetch(API + '/api/auth/users', {
+        headers: { Authorization: 'Bearer ' + _token },
+      });
+      const users = await res.json();
+      if (!users.length) { container.innerHTML = '<div style="color:#52525b;font-size:14px">No users yet.</div>'; return; }
+
+      container.innerHTML = users.map(u => `
+        <div id="wc-user-row-${u.id}" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#09090b;border:1px solid #27272a;border-radius:8px;margin-bottom:8px">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#fafafa">${u.display_name || u.username} <span style="font-size:12px;color:#52525b;font-weight:400">@${u.username}</span></div>
+            <div style="font-size:12px;color:#71717a;margin-top:2px">${u.role === 'admin' ? '🔑 Admin (Dashboard)' : '🔧 Field Tech'}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button onclick="window.__wcResetPw(${u.id}, '${u.username}')" style="background:#27272a;border:none;color:#a1a1aa;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer">Reset PW</button>
+            ${u.id !== currentUser?.id ? `<button onclick="window.__wcDeleteUser(${u.id}, '${u.username}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer">Remove</button>` : '<span style="font-size:12px;color:#52525b;padding:6px 10px">(you)</span>'}
+          </div>
+        </div>
+      `).join('');
+
+      window.__wcResetPw = async (id, username) => {
+        if (!confirm(`Reset password for "${username}" to Wilbanks1!?`)) return;
+        const res = await fetch(API + '/api/auth/users/' + id + '/reset-password', {
+          method: 'POST', headers: { Authorization: 'Bearer ' + _token },
+        });
+        if (res.ok) alert(`Password reset. "${username}" will be asked to set a new password on next login.`);
+        else alert('Reset failed.');
+      };
+
+      window.__wcDeleteUser = async (id, username) => {
+        if (!confirm(`Remove user "${username}"? This cannot be undone.`)) return;
+        const res = await fetch(API + '/api/auth/users/' + id, {
+          method: 'DELETE', headers: { Authorization: 'Bearer ' + _token },
+        });
+        if (res.ok) { document.getElementById('wc-user-row-' + id)?.remove(); }
+        else alert('Delete failed.');
+      };
+
+    } catch { container.innerHTML = '<div style="color:#ef4444;font-size:14px">Failed to load users.</div>'; }
   }
 
   function injectLogoutButton() {
