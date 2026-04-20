@@ -545,34 +545,62 @@
   }
 
   function injectLogoutButton() {
-    // Remove any existing
     document.getElementById('wc-logout-btn')?.remove();
-    const btn = document.createElement('button');
-    btn.id = 'wc-logout-btn';
-    btn.title = 'Sign Out';
-    btn.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-        <polyline points="16,17 21,12 16,7"/>
-        <line x1="21" y1="12" x2="9" y2="12"/>
-      </svg>
-      Sign Out
-    `;
-    Object.assign(btn.style, {
-      position: 'fixed', bottom: '16px', right: '16px', zIndex: '9998',
-      background: '#18181b', border: '1px solid #3f3f46',
-      color: '#a1a1aa', borderRadius: '8px',
-      padding: '8px 14px', fontSize: '13px', fontWeight: '500',
-      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-    });
-    btn.addEventListener('mouseenter', () => { btn.style.background = '#27272a'; btn.style.color = '#fafafa'; });
-    btn.addEventListener('mouseleave', () => { btn.style.background = '#18181b'; btn.style.color = '#a1a1aa'; });
-    btn.addEventListener('click', () => {
-      if (confirm('Sign out of Wilbanks Company?')) logout();
-    });
-    document.body.appendChild(btn);
+
+    function buildBtn() {
+      const btn = document.createElement('button');
+      btn.id = 'wc-logout-btn';
+      btn.setAttribute('data-testid', 'button-logout');
+      btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16,17 21,12 16,7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Sign Out
+      `;
+      Object.assign(btn.style, {
+        display: 'flex', alignItems: 'center', gap: '12px',
+        width: '100%', padding: '10px 12px',
+        background: 'transparent', border: 'none',
+        borderRadius: '6px', cursor: 'pointer',
+        fontSize: '14px', fontWeight: '500',
+        color: '#ef4444',
+        fontFamily: 'inherit',
+        transition: 'background 0.15s',
+        marginTop: '4px',
+      });
+      btn.addEventListener('mouseenter', () => btn.style.background = 'rgba(239,68,68,0.1)');
+      btn.addEventListener('mouseleave', () => btn.style.background = 'transparent');
+      btn.addEventListener('click', () => {
+        if (confirm('Sign out of Wilbanks Company?')) logout();
+      });
+      return btn;
+    }
+
+    // Try to inject into sidebar next to theme toggle button
+    function tryInject() {
+      // Desktop sidebar: find the theme toggle button and insert logout after it
+      const themeBtn = document.querySelector('[data-testid="button-toggle-theme"]');
+      if (themeBtn && !document.getElementById('wc-logout-btn')) {
+        const container = themeBtn.parentElement;
+        if (container) {
+          container.appendChild(buildBtn());
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Try immediately, then watch for React to mount
+    if (!tryInject()) {
+      const observer = new MutationObserver(() => {
+        if (tryInject()) observer.disconnect();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      // Stop watching after 10s to avoid leaks
+      setTimeout(() => observer.disconnect(), 10000);
+    }
   }
 
   function logout() {
