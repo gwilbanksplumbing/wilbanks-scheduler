@@ -309,8 +309,16 @@
     const faceIdHtml = faceIdAvailable && savedUsername ? `
       <div class="wc-divider">or</div>
       <button class="wc-btn wc-btn-faceid" id="wc-faceid-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h6m-6 0v18m0 0H5a2 2 0 0 1-2-2v-4m6 6h6m0 0h4a2 2 0 0 0 2-2v-4m-6 6V3m6 0h-4a2 2 0 0 1 2 2v4"/>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+          <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+          <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+          <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+          <circle cx="9" cy="10" r="1" fill="currentColor"/>
+          <circle cx="15" cy="10" r="1" fill="currentColor"/>
+          <path d="M9 15c.5 1 1.5 1.5 3 1.5s2.5-.5 3-1.5"/>
+          <path d="M12 7v2"/>
+          <path d="M11 13h2"/>
         </svg>
         Sign in with Face ID
       </button>
@@ -398,8 +406,16 @@
         } else {
           faceIdBtn.disabled = false;
           faceIdBtn.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h6m-6 0v18m0 0H5a2 2 0 0 1-2-2v-4m6 6h6m0 0h4a2 2 0 0 0 2-2v-4m-6 6V3m6 0h-4a2 2 0 0 1 2 2v4"/>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+              <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+              <circle cx="9" cy="10" r="1" fill="currentColor"/>
+              <circle cx="15" cy="10" r="1" fill="currentColor"/>
+              <path d="M9 15c.5 1 1.5 1.5 3 1.5s2.5-.5 3-1.5"/>
+              <path d="M12 7v2"/>
+              <path d="M11 13h2"/>
             </svg>
             Sign in with Face ID`;
           showError("Face ID verification failed. Use password instead.");
@@ -476,7 +492,15 @@
     const overlay = showOverlay(`
       <div class="wc-faceid-icon">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.5">
-          <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h6m-6 0v18m0 0H5a2 2 0 0 1-2-2v-4m6 6h6m0 0h4a2 2 0 0 0 2-2v-4m-6 6V3m6 0h-4a2 2 0 0 1 2 2v4"/>
+          <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+          <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+          <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+          <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+          <circle cx="9" cy="10" r="1" fill="#3b82f6"/>
+          <circle cx="15" cy="10" r="1" fill="#3b82f6"/>
+          <path d="M9 15c.5 1 1.5 1.5 3 1.5s2.5-.5 3-1.5"/>
+          <path d="M12 7v2"/>
+          <path d="M11 13h2"/>
         </svg>
       </div>
       <h2 class="wc-title" style="text-align:center">Enable Face ID?</h2>
