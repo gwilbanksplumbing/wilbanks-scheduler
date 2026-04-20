@@ -566,12 +566,9 @@
       cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
       fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
       boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-      opacity: '0', transition: 'opacity 0.2s',
     });
-    // Only show on hover/touch
-    btn.addEventListener('mouseenter', () => btn.style.opacity = '1');
-    btn.addEventListener('mouseleave', () => btn.style.opacity = '0');
-    btn.addEventListener('touchstart', () => btn.style.opacity = btn.style.opacity === '1' ? '0' : '1', { passive: true });
+    btn.addEventListener('mouseenter', () => { btn.style.background = '#27272a'; btn.style.color = '#fafafa'; });
+    btn.addEventListener('mouseleave', () => { btn.style.background = '#18181b'; btn.style.color = '#a1a1aa'; });
     btn.addEventListener('click', () => {
       if (confirm('Sign out of Wilbanks Company?')) logout();
     });
