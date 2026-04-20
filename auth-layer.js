@@ -562,6 +562,9 @@
 
   // ── User Management ────────────────────────────────────────────────────────
   function injectUsersNav() {
+    // Guard: only admins get this nav item
+    if (currentUser?.role !== 'admin') return;
+
     function tryInject() {
       // Desktop sidebar: find Archive nav link and add Users after it
       const navLinks = document.querySelectorAll('nav a, aside a');
@@ -950,6 +953,9 @@
     window.__WC_USER = null;
     document.getElementById('wc-logout-btn')?.remove();
     document.getElementById('wc-logout-mobile')?.remove();
+    document.getElementById('wc-users-nav-desktop')?.remove();
+    document.getElementById('wc-users-nav-mobile')?.remove();
+    document.getElementById('wc-users-panel')?.remove();
     renderLogin();
     // Hide app
     const root = document.getElementById("root");
