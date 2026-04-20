@@ -526,20 +526,22 @@
     currentUser = user;
     window.__WC_USER = user;
 
-    // Field techs can only use the field tech app, not the dashboard
+    // Determine which app we're on
     const isDashboard = !window.location.pathname.includes('fieldtech') &&
                         !window.location.href.includes('wilbanks-fieldtech');
+    // 'tech' can only access field tech app
     if (user.role === 'tech' && isDashboard) {
       clearToken();
       renderLogin('Field Tech accounts can only access the Field Tech app, not the dashboard.');
       return;
     }
-    // Dispatchers and admins can only use the dashboard, not the field tech app
+    // 'admin' and 'dispatcher' can only access dashboard
     if ((user.role === 'admin' || user.role === 'dispatcher') && !isDashboard) {
       clearToken();
       renderLogin('Dashboard accounts cannot access the Field Tech app.');
       return;
     }
+    // 'both' role can access either app — no block needed
 
     if (user.mustChangePassword) {
       renderChangePassword();
@@ -688,8 +690,9 @@
             <div>
               <label style="display:block;font-size:12px;color:#71717a;margin-bottom:5px">ROLE</label>
               <select id="wc-new-role" style="width:100%;box-sizing:border-box;background:#09090b;border:1px solid #3f3f46;border-radius:8px;padding:9px 12px;font-size:14px;color:#fafafa;outline:none">
-                <option value="tech">Field Tech</option>
-                <option value="dispatcher">Dashboard User</option>
+                <option value="tech">Field Tech Only</option>
+                <option value="dispatcher">Dashboard Only</option>
+                <option value="both">Dashboard + Field Tech</option>
                 <option value="admin">Admin (Dashboard + Users)</option>
               </select>
             </div>
@@ -773,7 +776,7 @@
         <div id="wc-user-row-${u.id}" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#09090b;border:1px solid #27272a;border-radius:8px;margin-bottom:8px">
           <div>
             <div style="font-size:14px;font-weight:600;color:#fafafa">${u.display_name || u.username} <span style="font-size:12px;color:#52525b;font-weight:400">@${u.username}</span></div>
-            <div style="font-size:12px;color:#71717a;margin-top:2px">${u.role === 'admin' ? '🔑 Admin (Dashboard + Users)' : u.role === 'dispatcher' ? '🖥️ Dashboard User' : '🔧 Field Tech'}</div>
+            <div style="font-size:12px;color:#71717a;margin-top:2px">${u.role === 'admin' ? '🔑 Admin (Dashboard + Users)' : u.role === 'dispatcher' ? '🖥️ Dashboard Only' : u.role === 'both' ? '🖥️🔧 Dashboard + Field Tech' : '🔧 Field Tech Only'}</div>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0">
             <button onclick="window.__wcResetPw(${u.id}, '${u.username}')" style="background:#27272a;border:none;color:#a1a1aa;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer">Reset PW</button>
@@ -1004,10 +1007,22 @@
           }, 1500);
           // Block field techs from accessing the dashboard URL
           if (user.role === 'tech') {
-            const isDashboard = !window.location.pathname.includes('fieldtech');
+            const isDashboard = !window.location.pathname.includes('fieldtech') &&
+                                !window.location.href.includes('wilbanks-fieldtech');
             if (isDashboard) {
               if (root) root.style.display = 'none';
               renderLogin('Field Tech accounts cannot access the dashboard.');
+              clearToken();
+              return;
+            }
+          }
+          // Block dashboard-only roles from field tech app
+          if (user.role === 'admin' || user.role === 'dispatcher') {
+            const isDashboard = !window.location.pathname.includes('fieldtech') &&
+                                !window.location.href.includes('wilbanks-fieldtech');
+            if (!isDashboard) {
+              if (root) root.style.display = 'none';
+              renderLogin('Dashboard accounts cannot access the Field Tech app.');
               clearToken();
               return;
             }
