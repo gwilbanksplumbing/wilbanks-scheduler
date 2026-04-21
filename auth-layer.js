@@ -324,7 +324,7 @@
         <img src="./assets/logo-DmC-dsba-1776655699849.jpg" onerror="this.src='./assets/logo-DmC-dsba.jpg'" alt="Wilbanks" />
         <div class="wc-logo-text">
           <h1>Wilbanks Company</h1>
-          <p>HVAC &amp; Plumbing</p>
+          <p>Cooling &bull; Heating &bull; Plumbing</p>
         </div>
       </div>
       <h2 class="wc-title">Sign In</h2>
@@ -421,7 +421,7 @@
         <img src="./assets/logo-DmC-dsba-1776655699849.jpg" onerror="this.src='./assets/logo-DmC-dsba.jpg'" alt="Wilbanks" />
         <div class="wc-logo-text">
           <h1>Wilbanks Company</h1>
-          <p>HVAC &amp; Plumbing</p>
+          <p>Cooling &bull; Heating &bull; Plumbing</p>
         </div>
       </div>
       <h2 class="wc-title">Set Your Password</h2>
