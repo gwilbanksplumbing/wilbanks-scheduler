@@ -566,9 +566,23 @@
     dismissOverlay();
     window.__WC_USER = currentUser;
     window.__WC_LOGOUT = logout;
+    // Sync display name into the field tech app's localStorage key
+    // so the top-left header always shows the logged-in user's name
+    syncFieldTechName(currentUser);
     injectLogoutButton();
     // Only inject Users nav for admin users on the dashboard
     if (currentUser?.role === 'admin') injectUsersNav();
+  }
+
+  function syncFieldTechName(user) {
+    if (!user) return;
+    const isDashboard = !window.location.pathname.includes('fieldtech') &&
+                        !window.location.href.includes('wilbanks-fieldtech');
+    if (isDashboard) return; // only needed on field tech app
+    try {
+      const name = user.displayName || user.username || '';
+      localStorage.setItem('wc_tech_name', name);
+    } catch {}
   }
 
   // ── User Management ────────────────────────────────────────────────────────
@@ -1000,6 +1014,8 @@
           window.__WC_LOGOUT = logout;
           // Token valid — show app and inject UI elements
           if (root) root.style.display = "";
+          // Sync display name into field tech app header
+          syncFieldTechName(user);
           // Wait for React to mount then inject
           setTimeout(() => {
             injectLogoutButton();
