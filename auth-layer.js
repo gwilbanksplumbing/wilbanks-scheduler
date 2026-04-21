@@ -572,6 +572,52 @@
     injectLogoutButton();
     // Only inject Users nav for admin users on the dashboard
     if (currentUser?.role === 'admin') injectUsersNav();
+    // Start inactivity timer
+    startInactivityTimer();
+  }
+
+  // ── Inactivity timeout ─────────────────────────────────────────────────────
+  // Dashboard: 30 minutes. Field app: 24 hours.
+  const LAST_ACTIVE_KEY = 'wc_last_active';
+  let _inactivityInterval = null;
+
+  function getInactivityLimit() {
+    const isDashboard = !window.location.pathname.includes('fieldtech') &&
+                        !window.location.href.includes('wilbanks-fieldtech');
+    return isDashboard ? 30 * 60 * 1000 : 24 * 60 * 60 * 1000; // 30min or 24hr in ms
+  }
+
+  function touchActivity() {
+    try { localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString()); } catch {}
+  }
+
+  function startInactivityTimer() {
+    // Record activity now
+    touchActivity();
+    // Listen for any user interaction
+    ['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(evt => {
+      window.addEventListener(evt, touchActivity, { passive: true });
+    });
+    // Check every minute
+    if (_inactivityInterval) clearInterval(_inactivityInterval);
+    _inactivityInterval = setInterval(() => {
+      try {
+        const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) || '0', 10);
+        if (last && Date.now() - last > getInactivityLimit()) {
+          clearInterval(_inactivityInterval);
+          _inactivityInterval = null;
+          logout();
+          // Show a message on the login screen
+          setTimeout(() => {
+            const err = document.getElementById('wc-error');
+            if (err) {
+              err.textContent = 'You were logged out due to inactivity.';
+              err.classList.add('visible');
+            }
+          }, 300);
+        }
+      } catch {}
+    }, 60 * 1000); // check every 60 seconds
   }
 
   function syncFieldTechName(user) {
@@ -1016,6 +1062,8 @@
           if (root) root.style.display = "";
           // Sync display name into field tech app header
           syncFieldTechName(user);
+          // Start inactivity timer
+          startInactivityTimer();
           // Wait for React to mount then inject
           setTimeout(() => {
             injectLogoutButton();
