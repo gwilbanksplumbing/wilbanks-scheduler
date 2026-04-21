@@ -554,8 +554,10 @@
     const faceIdAvailable = window.PublicKeyCredential && typeof navigator.credentials?.get === "function";
     const alreadyPrompted = hasPromptedWebAuthn();
     const hasWebAuthn = currentUser?.hasWebAuthn;
+    // Only offer Face ID to field tech users (tech/both) — not dashboard-only roles
+    const isTechRole = currentUser?.role === 'tech' || currentUser?.role === 'both';
 
-    if (faceIdAvailable && !alreadyPrompted && !hasWebAuthn) {
+    if (faceIdAvailable && !alreadyPrompted && !hasWebAuthn && isTechRole) {
       renderFaceIdPrompt();
     } else {
       launchApp();
