@@ -199,12 +199,12 @@
       box-shadow: 0 24px 80px rgba(0,0,0,0.6);
     }
     .wc-logo {
-      display: flex; flex-direction: column; align-items: center;
-      gap: 10px; margin-bottom: 28px; text-align: center;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 28px;
     }
-    .wc-logo img { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; }
-    .wc-logo-text { line-height: 1.2; text-align: center; }
-    .wc-logo-text h1 { margin:0; font-size: 18px; font-weight: 700; color: #fafafa; }
+    .wc-logo img { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; }
+    .wc-logo-text { line-height: 1.2; }
+    .wc-logo-text h1 { margin:0; font-size: 17px; font-weight: 700; color: #fafafa; }
     .wc-logo-text p { margin:0; font-size: 12px; color: #71717a; }
     .wc-title { font-size: 22px; font-weight: 700; color: #fafafa; margin: 0 0 6px; }
     .wc-subtitle { font-size: 14px; color: #71717a; margin: 0 0 24px; }
