@@ -535,8 +535,8 @@
       renderLogin('Field Tech accounts can only access the Field Tech app, not the dashboard.');
       return;
     }
-    // 'admin' and 'dispatcher' can only access dashboard
-    if ((user.role === 'admin' || user.role === 'dispatcher') && !isDashboard) {
+    // 'dispatcher' can only access dashboard (admin can access both)
+    if (user.role === 'dispatcher' && !isDashboard) {
       clearToken();
       renderLogin('Dashboard accounts cannot access the Field Tech app.');
       return;
@@ -1016,8 +1016,8 @@
               return;
             }
           }
-          // Block dashboard-only roles from field tech app
-          if (user.role === 'admin' || user.role === 'dispatcher') {
+          // Block dispatcher-only role from field tech app (admin can access both)
+          if (user.role === 'dispatcher') {
             const isDashboard = !window.location.pathname.includes('fieldtech') &&
                                 !window.location.href.includes('wilbanks-fieldtech');
             if (!isDashboard) {
