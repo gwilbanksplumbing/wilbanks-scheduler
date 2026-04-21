@@ -900,34 +900,7 @@
       return btn;
     }
 
-    // Build a floating button fallback (field tech mobile)
-    function buildFloatingBtn() {
-      const btn = document.createElement('button');
-      btn.id = 'wc-logout-btn';
-      btn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16,17 21,12 16,7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-        Sign Out
-      `;
-      Object.assign(btn.style, {
-        position: 'fixed', bottom: '24px', right: '16px', zIndex: '9998',
-        display: 'flex', alignItems: 'center', gap: '8px',
-        padding: '10px 16px',
-        background: 'rgba(239,68,68,0.15)',
-        border: '1px solid rgba(239,68,68,0.4)',
-        borderRadius: '20px', cursor: 'pointer',
-        fontSize: '14px', fontWeight: '600',
-        color: '#ef4444',
-        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-        WebkitTapHighlightColor: 'transparent',
-      });
-      btn.addEventListener('click', doLogout);
-      return btn;
-    }
+
 
     function doLogout() {
       if (confirm('Sign out of Wilbanks Company?')) logout();
@@ -985,12 +958,7 @@
       return false;
     }
 
-    // Strategy 3: Floating button fallback if nothing else works
-    function injectFloating() {
-      if (!document.getElementById('wc-logout-btn')) {
-        document.body.appendChild(buildFloatingBtn());
-      }
-    }
+
 
     function tryInject() {
       if (tryInjectSidebar()) return true;
@@ -1013,12 +981,7 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Floating fallback after 8s if nothing worked at all
-    setTimeout(() => {
-      if (!document.getElementById('wc-logout-btn') && !document.getElementById('wc-logout-mobile')) {
-        injectFloating();
-      }
-    }, 8000);
+
   }
 
   function logout() {
