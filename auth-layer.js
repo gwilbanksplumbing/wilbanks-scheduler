@@ -12,23 +12,38 @@
   const USERNAME_KEY = "wc_saved_username";
   const WEBAUTHN_PROMPT_KEY = "wc_webauthn_prompted"; // so we only ask once
 
-  // ── Token storage (memory primary, sessionStorage fallback for page refresh) ──
-  // We store in sessionStorage so a page refresh doesn't require re-login within the session.
-  // The 30-day JWT itself is the security boundary.
+  // ── Token storage ────────────────────────────────────────────────────────
+  // Field tech app is a PWA installed on iPhone home screen — standalone windows
+  // have isolated sessionStorage that clears on every cold launch, so we use
+  // localStorage for the field app so the session survives PWA restarts.
+  // Dashboard uses sessionStorage (clears when tab closes, more secure on shared desktops).
+  // The 30-day JWT + inactivity timeout are the security boundaries in both cases.
   let _token = null;
+
+  function isFieldApp() {
+    return window.location.pathname.includes('fieldtech') ||
+           window.location.href.includes('wilbanks-fieldtech');
+  }
 
   function saveToken(token) {
     _token = token;
-    try { sessionStorage.setItem(TOKEN_KEY, token); } catch {}
+    try {
+      if (isFieldApp()) { localStorage.setItem(TOKEN_KEY, token); }
+      else { sessionStorage.setItem(TOKEN_KEY, token); }
+    } catch {}
   }
   function loadToken() {
     if (_token) return _token;
-    try { _token = sessionStorage.getItem(TOKEN_KEY); } catch {}
+    try {
+      if (isFieldApp()) { _token = localStorage.getItem(TOKEN_KEY); }
+      else { _token = sessionStorage.getItem(TOKEN_KEY); }
+    } catch {}
     return _token;
   }
   function clearToken() {
     _token = null;
     try { sessionStorage.removeItem(TOKEN_KEY); } catch {}
+    try { localStorage.removeItem(TOKEN_KEY); } catch {}
   }
 
   // Expose token globally for React app to use
