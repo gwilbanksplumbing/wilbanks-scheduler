@@ -932,7 +932,9 @@
     // Strategy 2: Field tech — hijack the existing LogOut icon button in the header
     // The compiled app already has a LogOut SVG button — rewire it
     function tryHijackLogoutBtn() {
-      if (document.getElementById('wc-logout-btn')) return true;
+      const existing = document.getElementById('wc-logout-btn');
+      if (existing && document.body.contains(existing)) return true;
+      if (existing) existing.remove(); // stale — clean up
       // Find button containing LogOut SVG path (M9 21H5)
       const buttons = document.querySelectorAll('button');
       for (const btn of buttons) {
@@ -966,18 +968,15 @@
       return false;
     }
 
-    let sidebarDone = tryInject();
+    tryInject();
     let attempts = 0;
 
-    // Keep observer running permanently to catch mobile menu open/close
+    // Keep observer running permanently — re-wires logout btn after every React navigation
     const observer = new MutationObserver(() => {
       attempts++;
-      if (!sidebarDone) {
-        sidebarDone = tryInject();
-      }
-      // Always try to inject into mobile menu whenever DOM changes (menu opens)
+      tryInject();
       tryInjectMobileMenu();
-      if (attempts > 500) observer.disconnect();
+      if (attempts > 2000) observer.disconnect();
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
