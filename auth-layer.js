@@ -644,8 +644,13 @@
   function checkInactivityNow() {
     try {
       const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) || '0', 10);
-      if (last && Date.now() - last > getInactivityLimit()) {
+      // last===0 means never recorded (fresh install/cleared storage) — don't log out
+      if (!last) return false;
+      if (Date.now() - last > getInactivityLimit()) {
         if (_inactivityInterval) { clearInterval(_inactivityInterval); _inactivityInterval = null; }
+        // Hide app root before logout so there's no blank flash
+        const root = document.getElementById('root') || document.querySelector('#app,[data-reactroot]');
+        if (root) root.style.display = 'none';
         logout();
         setTimeout(() => {
           const err = document.getElementById('wc-error');
