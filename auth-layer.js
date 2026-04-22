@@ -109,7 +109,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username }),
       });
-      if (!optRes.ok) return null;
+      if (!optRes.ok) return { error: "no_credential" };
       const options = await optRes.json();
 
       // Convert base64url fields
@@ -416,7 +416,6 @@
           setSavedUsername(username);
           onLoginSuccess(result.token, result.user);
         } else {
-          // Mark credentials as invalid so password login triggers re-registration
           try {
             localStorage.removeItem(WEBAUTHN_PROMPT_KEY);
             localStorage.removeItem(WEBAUTHN_VALID_KEY);
@@ -430,7 +429,11 @@
               <path d="M8.5 14.5 Q12 17.5 15.5 14.5"/>
             </svg>
             Sign in with Face ID`;
-          showError("Face ID needs to be set up again. Use your password — you'll be prompted to re-enable Face ID after logging in.");
+          if (result?.error === 'no_credential') {
+            showError("Face ID isn't set up yet. Sign in with your password below — you'll be prompted to enable Face ID right after.");
+          } else {
+            showError("Face ID failed. Sign in with your password — you'll be prompted to re-enable Face ID after logging in.");
+          }
         }
       });
     }
