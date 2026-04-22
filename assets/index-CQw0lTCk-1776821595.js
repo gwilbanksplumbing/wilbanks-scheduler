@@ -131,13 +131,16 @@ const _DatePickerPopover=({value,onChange})=>{
           if(!_day)return d.jsx("div",{key:"e"+_ci,style:{padding:"4px"}});
           const _thisDate=new Date(_yr,_mo,_day);_thisDate.setHours(0,0,0,0);
           const _isToday=_thisDate.getTime()===_today.getTime();
+          const _isPast=_thisDate.getTime()<_today.getTime();
           const _isSel=_selDate&&_thisDate.getTime()===new Date(_selDate.getFullYear(),_selDate.getMonth(),_selDate.getDate()).getTime();
           const _dateStr=Ln(new Date(_yr,_mo,_day),"yyyy-MM-dd");
           return d.jsx("button",{
             type:"button",
-            onClick:()=>{onChange(_dateStr);_setOpen(false);},
+            disabled:_isPast,
+            onClick:()=>{if(!_isPast){onChange(_dateStr);_setOpen(false);}},
             style:{
-              padding:"4px 2px",borderRadius:"4px",fontSize:"12px",cursor:"pointer",
+              padding:"4px 2px",borderRadius:"4px",fontSize:"12px",cursor:_isPast?"not-allowed":"pointer",
+              opacity:_isPast?0.3:1,
               background:_isSel?"hsl(var(--primary))":_isToday?"hsl(var(--muted))":"none",
               color:_isSel?"hsl(var(--primary-foreground))":"hsl(var(--foreground))",
               border:"none",fontWeight:_isToday&&!_isSel?"600":"normal",
