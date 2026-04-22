@@ -11,6 +11,7 @@
   const TOKEN_KEY = "wc_auth_token"; // sessionStorage — clears when tab closes... we use memory
   const USERNAME_KEY = "wc_saved_username";
   const WEBAUTHN_PROMPT_KEY = "wc_webauthn_prompted"; // so we only ask once
+  const WEBAUTHN_VALID_KEY = "wc_webauthn_valid"; // set after a successful Face ID login
 
   // ── Token storage ────────────────────────────────────────────────────────
   // Field tech app is a PWA installed on iPhone home screen — standalone windows
@@ -411,20 +412,14 @@
         faceIdBtn.innerHTML = '<span class="wc-spinner"></span> Checking Face ID...';
         const result = await tryWebAuthnLogin(username);
         if (result?.token) {
+          try { localStorage.setItem(WEBAUTHN_VALID_KEY, '1'); } catch {}
           setSavedUsername(username);
           onLoginSuccess(result.token, result.user);
         } else {
-          // Clear stale credentials so user can re-register after password login
+          // Mark credentials as invalid so password login triggers re-registration
           try {
             localStorage.removeItem(WEBAUTHN_PROMPT_KEY);
-            // Best-effort server-side clear using stored token (may not be available here)
-            const storedToken = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
-            if (storedToken) {
-              _origFetch(API + "/api/auth/webauthn", {
-                method: "DELETE",
-                headers: { "Authorization": "Bearer " + storedToken }
-              }).catch(() => {});
-            }
+            localStorage.removeItem(WEBAUTHN_VALID_KEY);
           } catch {}
           faceIdBtn.disabled = false;
           faceIdBtn.innerHTML = `
@@ -532,6 +527,7 @@
       const ok = await registerWebAuthn();
       if (ok) {
         markWebAuthnPrompted();
+        try { localStorage.setItem(WEBAUTHN_VALID_KEY, '1'); } catch {}
         launchApp();
       } else {
         errorEl.textContent = "Face ID setup failed. You can enable it later in settings.";
@@ -581,10 +577,32 @@
     const faceIdAvailable = window.PublicKeyCredential && typeof navigator.credentials?.get === "function";
     const alreadyPrompted = hasPromptedWebAuthn();
     const hasWebAuthn = currentUser?.hasWebAuthn;
+    const credentialValid = localStorage.getItem(WEBAUTHN_VALID_KEY) === '1';
     // Only offer Face ID to field tech users (tech/both) — not dashboard-only roles
     const isTechRole = currentUser?.role === 'tech' || currentUser?.role === 'both';
 
-    if (faceIdAvailable && !alreadyPrompted && !hasWebAuthn && isTechRole) {
+    if (faceIdAvailable && isTechRole) {
+      // Credentials are stale if server has them but they've never successfully
+      // authenticated (WEBAUTHN_VALID_KEY not set) — wipe and re-prompt
+      const stale = (hasWebAuthn || alreadyPrompted) && !credentialValid;
+      if (stale) {
+        const tok = _token || localStorage.getItem(TOKEN_KEY) || '';
+        const wipe = tok
+          ? _origFetch(API + '/api/auth/webauthn', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + tok } }).catch(() => {})
+          : Promise.resolve();
+        wipe.then(() => {
+          try {
+            localStorage.removeItem(WEBAUTHN_PROMPT_KEY);
+            localStorage.removeItem(WEBAUTHN_VALID_KEY);
+          } catch {}
+          currentUser.hasWebAuthn = false;
+          renderFaceIdPrompt();
+        });
+        return;
+      }
+      // Already set up and working — skip prompt
+      if (alreadyPrompted && credentialValid) { launchApp(); return; }
+      // Fresh user — never prompted yet
       renderFaceIdPrompt();
     } else {
       launchApp();
