@@ -621,10 +621,14 @@
       const savedHash = sessionStorage.getItem('wc_last_hash');
       if (savedHash && savedHash !== '#/' && savedHash !== '#') {
         sessionStorage.removeItem('wc_last_hash');
-        // Use replaceState so it doesn't add a back-stack entry, then
-        // fire a hashchange so wouter picks it up
-        window.history.replaceState(null, '', savedHash);
-        window.dispatchEvent(new HashChangeEvent('hashchange'));
+        // Try immediately, then retry after React has mounted — wouter picks up
+        // window.location.hash changes via its own popstate/hashchange listeners
+        const _applyHash = () => {
+          try { window.location.hash = savedHash.replace(/^#/, ''); } catch {}
+        };
+        _applyHash();
+        setTimeout(_applyHash, 150);
+        setTimeout(_applyHash, 500);
       }
     } catch {}
     // Sync display name into the field tech app's localStorage key
@@ -1133,10 +1137,11 @@
   }
 
   // ── Hash persistence on refresh ────────────────────────────────────────────
-  // Save the current hash route before the page unloads so a refresh lands
-  // back on the same view instead of the default route.
+  // Save the current hash route continuously so a refresh (or iOS PWA relaunch)
+  // lands back on the same screen. iOS Safari does NOT reliably fire beforeunload,
+  // so we save on hashchange and visibilitychange instead.
   const HASH_KEY = 'wc_last_hash';
-  window.addEventListener('beforeunload', () => {
+  function _saveHash() {
     try {
       const h = window.location.hash;
       if (h && h !== '#/' && h !== '#') {
@@ -1145,7 +1150,11 @@
         sessionStorage.removeItem(HASH_KEY);
       }
     } catch {}
-  });
+  }
+  window.addEventListener('hashchange', _saveHash);
+  document.addEventListener('visibilitychange', _saveHash);
+  window.addEventListener('pagehide', _saveHash);
+  window.addEventListener('beforeunload', _saveHash);
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bootstrap);
