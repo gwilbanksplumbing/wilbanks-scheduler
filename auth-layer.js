@@ -672,11 +672,20 @@
   function syncFieldTechName(user) {
     if (!user) return;
     const isDashboard = !window.location.pathname.includes('fieldtech') &&
-                        !window.location.href.includes('wilbanks-fieldtech');
+                        !window.location.href.includes('wilbanks-fieldtech') &&
+                        !window.location.href.includes('fieldtech');
     if (isDashboard) return; // only needed on field tech app
     try {
       const name = user.displayName || user.username || '';
       localStorage.setItem('wc_tech_name', name);
+      // Dispatch storage event so React state in hb() picks up the new value
+      // even though it was set in the same window (storage event normally only
+      // fires in OTHER windows, so we dispatch it manually)
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'wc_tech_name',
+        newValue: name,
+        storageArea: localStorage
+      }));
     } catch {}
   }
 
