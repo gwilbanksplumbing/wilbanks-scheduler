@@ -414,6 +414,18 @@
           setSavedUsername(username);
           onLoginSuccess(result.token, result.user);
         } else {
+          // Clear stale credentials so user can re-register after password login
+          try {
+            localStorage.removeItem(WEBAUTHN_PROMPT_KEY);
+            // Best-effort server-side clear using stored token (may not be available here)
+            const storedToken = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+            if (storedToken) {
+              _origFetch(API + "/api/auth/webauthn", {
+                method: "DELETE",
+                headers: { "Authorization": "Bearer " + storedToken }
+              }).catch(() => {});
+            }
+          } catch {}
           faceIdBtn.disabled = false;
           faceIdBtn.innerHTML = `
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
@@ -423,7 +435,7 @@
               <path d="M8.5 14.5 Q12 17.5 15.5 14.5"/>
             </svg>
             Sign in with Face ID`;
-          showError("Face ID verification failed. Use password instead.");
+          showError("Face ID needs to be set up again. Use your password — you'll be prompted to re-enable Face ID after logging in.");
         }
       });
     }
