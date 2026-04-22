@@ -1095,6 +1095,19 @@
           window.__WC_LOGOUT = logout;
           // Token valid — show app and inject UI elements
           if (root) root.style.display = "";
+          // Restore the hash route from before the refresh
+          try {
+            const savedHash = sessionStorage.getItem('wc_last_hash');
+            if (savedHash && savedHash !== '#/' && savedHash !== '#') {
+              sessionStorage.removeItem('wc_last_hash');
+              const _applyHash = () => {
+                try { window.location.hash = savedHash.replace(/^#/, ''); } catch {}
+              };
+              _applyHash();
+              setTimeout(_applyHash, 150);
+              setTimeout(_applyHash, 500);
+            }
+          } catch {}
           // Sync display name into field tech app header
           syncFieldTechName(user);
           // Start inactivity timer
