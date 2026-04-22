@@ -582,7 +582,7 @@
     const hasWebAuthn = currentUser?.hasWebAuthn;
     const credentialValid = localStorage.getItem(WEBAUTHN_VALID_KEY) === '1';
     // Only offer Face ID to field tech users (tech/both) — not dashboard-only roles
-    const isTechRole = currentUser?.role === 'tech' || currentUser?.role === 'both';
+    const isTechRole = true; // All roles can use Face ID
 
     if (faceIdAvailable && isTechRole) {
       // Credentials are stale if server has them but they've never successfully
