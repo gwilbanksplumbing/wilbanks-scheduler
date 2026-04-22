@@ -641,30 +641,6 @@
     try { localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString()); } catch {}
   }
 
-  function checkInactivityNow() {
-    try {
-      const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) || '0', 10);
-      // last===0 means never recorded (fresh install/cleared storage) — don't log out
-      if (!last) return false;
-      if (Date.now() - last > getInactivityLimit()) {
-        if (_inactivityInterval) { clearInterval(_inactivityInterval); _inactivityInterval = null; }
-        // Hide app root before logout so there's no blank flash
-        const root = document.getElementById('root') || document.querySelector('#app,[data-reactroot]');
-        if (root) root.style.display = 'none';
-        logout();
-        setTimeout(() => {
-          const err = document.getElementById('wc-error');
-          if (err) {
-            err.textContent = 'Session expired. Please sign in again.';
-            err.classList.add('visible');
-          }
-        }, 300);
-        return true; // expired
-      }
-    } catch {}
-    return false;
-  }
-
   function startInactivityTimer() {
     // Record activity now
     touchActivity();
@@ -672,15 +648,25 @@
     ['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(evt => {
       window.addEventListener(evt, touchActivity, { passive: true });
     });
-    // Check immediately on app resume (tab visible again, PWA foreground)
-    const _onResume = () => { if (_token) checkInactivityNow(); };
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') _onResume();
-    });
-    window.addEventListener('pageshow', _onResume);
-    // Check every minute while app is open
+    // Check every minute
     if (_inactivityInterval) clearInterval(_inactivityInterval);
-    _inactivityInterval = setInterval(() => { checkInactivityNow(); }, 60 * 1000);
+    _inactivityInterval = setInterval(() => {
+      try {
+        const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) || '0', 10);
+        if (last && Date.now() - last > getInactivityLimit()) {
+          clearInterval(_inactivityInterval);
+          _inactivityInterval = null;
+          logout();
+          setTimeout(() => {
+            const err = document.getElementById('wc-error');
+            if (err) {
+              err.textContent = 'You were logged out due to inactivity.';
+              err.classList.add('visible');
+            }
+          }, 300);
+        }
+      } catch {}
+    }, 60 * 1000); // check every 60 seconds
   }
 
   function syncFieldTechName(user) {
@@ -1087,8 +1073,6 @@
           if (root) root.style.display = "";
           // Sync display name into field tech app header
           syncFieldTechName(user);
-          // Check inactivity BEFORE starting timer — catches cold launch after closure
-          if (checkInactivityNow()) return;
           // Start inactivity timer
           startInactivityTimer();
           // Wait for React to mount then inject
