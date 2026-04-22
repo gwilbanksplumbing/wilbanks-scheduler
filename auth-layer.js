@@ -616,6 +616,17 @@
     dismissOverlay();
     window.__WC_USER = currentUser;
     window.__WC_LOGOUT = logout;
+    // Restore the hash route from before the refresh
+    try {
+      const savedHash = sessionStorage.getItem('wc_last_hash');
+      if (savedHash && savedHash !== '#/' && savedHash !== '#') {
+        sessionStorage.removeItem('wc_last_hash');
+        // Use replaceState so it doesn't add a back-stack entry, then
+        // fire a hashchange so wouter picks it up
+        window.history.replaceState(null, '', savedHash);
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+      }
+    } catch {}
     // Sync display name into the field tech app's localStorage key
     // so the top-left header always shows the logged-in user's name
     syncFieldTechName(currentUser);
@@ -1120,6 +1131,21 @@
 
     renderLogin();
   }
+
+  // ── Hash persistence on refresh ────────────────────────────────────────────
+  // Save the current hash route before the page unloads so a refresh lands
+  // back on the same view instead of the default route.
+  const HASH_KEY = 'wc_last_hash';
+  window.addEventListener('beforeunload', () => {
+    try {
+      const h = window.location.hash;
+      if (h && h !== '#/' && h !== '#') {
+        sessionStorage.setItem(HASH_KEY, h);
+      } else {
+        sessionStorage.removeItem(HASH_KEY);
+      }
+    } catch {}
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bootstrap);
