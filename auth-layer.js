@@ -711,8 +711,10 @@
     if (role !== 'admin' && role !== 'both') return;
     const isAdmin = role === 'admin';
 
-    // Track collapsed state across re-injections
+    // Track collapsed state across re-injections; auto-open when on an admin page
     if (typeof window._wcAdminOpen === 'undefined') window._wcAdminOpen = false;
+    const _curHash = window.location.hash;
+    if (_curHash.includes('audit-log') || _curHash.includes('deleted-jobs') || _curHash.includes('/settings')) window._wcAdminOpen = true;
 
     function buildGroup(refLink) {
       // Remove old group if present
@@ -722,7 +724,7 @@
       const isDark = document.documentElement.classList.contains('dark');
       const open = window._wcAdminOpen;
       const hash = window.location.hash;
-      const isActive = hash.includes('audit-log') || hash.includes('deleted-jobs');
+      const isActive = hash.includes('audit-log') || hash.includes('deleted-jobs') || hash.includes('/settings');
 
       const group = document.createElement('div');
       group.id = 'wc-admin-tools-group';
@@ -778,6 +780,11 @@
       }
 
       const items = [];
+      items.push(makeSubItem({
+        label: 'Settings', href: '#/settings', active: hash.includes('/settings'),
+        svgPath: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+        onClick: null,
+      }));
       if (isAdmin) {
         items.push(makeSubItem({
           label: 'Users', href: null, active: false,
