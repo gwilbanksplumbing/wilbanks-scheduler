@@ -636,9 +636,8 @@
     syncFieldTechName(currentUser);
     injectLogoutButton();
     // Only inject Users nav for admin users on the dashboard
-    if (currentUser?.role === 'admin') injectUsersNav();
-    // Inject Audit Log + Deleted Jobs nav for admin/both
-    if (currentUser?.role === 'admin' || currentUser?.role === 'both') injectAuditNav();
+    // Inject collapsible Admin Tools group for admin/both
+    if (currentUser?.role === 'admin' || currentUser?.role === 'both') injectAdminToolsNav();
     // Start inactivity timer
     startInactivityTimer();
   }
@@ -707,45 +706,126 @@
   }
 
   // ── User Management ────────────────────────────────────────────────────────
-  function injectAuditNav() {
+  function injectAdminToolsNav() {
     const role = currentUser?.role;
     if (role !== 'admin' && role !== 'both') return;
+    const isAdmin = role === 'admin';
+
+    // Track collapsed state across re-injections
+    if (typeof window._wcAdminOpen === 'undefined') window._wcAdminOpen = false;
+
+    function buildGroup(refLink) {
+      // Remove old group if present
+      const old = document.getElementById('wc-admin-tools-group');
+      if (old) old.remove();
+
+      const isDark = document.documentElement.classList.contains('dark');
+      const open = window._wcAdminOpen;
+      const hash = window.location.hash;
+      const isActive = hash.includes('audit-log') || hash.includes('deleted-jobs');
+
+      const group = document.createElement('div');
+      group.id = 'wc-admin-tools-group';
+      group.style.cssText = 'margin-bottom:2px;';
+
+      // Folder toggle button
+      const toggle = document.createElement('button');
+      toggle.style.cssText = `
+        display:flex; align-items:center; gap:10px;
+        width:100%; padding:8px 12px;
+        background:${isActive ? 'hsl(var(--primary))' : 'transparent'};
+        color:${isActive ? 'hsl(var(--primary-foreground))' : 'hsl(var(--muted-foreground))'};
+        border:none; border-radius:6px; cursor:pointer;
+        font-size:14px; font-weight:500; font-family:inherit;
+        text-align:left; transition:background 0.15s;
+      `;
+      toggle.onmouseenter = () => { if (!isActive) toggle.style.background = 'hsl(var(--muted))'; toggle.style.color = 'hsl(var(--foreground))'; };
+      toggle.onmouseleave = () => { if (!isActive) { toggle.style.background = 'transparent'; toggle.style.color = 'hsl(var(--muted-foreground))'; } };
+      toggle.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>
+        </svg>
+        <span style="flex:1">Admin Tools</span>
+        <svg id="wc-admin-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+          style="flex-shrink:0;transition:transform 0.2s;transform:rotate(${open ? 180 : 0}deg)">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      `;
+
+      // Sub-items container
+      const sub = document.createElement('div');
+      sub.id = 'wc-admin-sub';
+      sub.style.cssText = `overflow:hidden; max-height:${open ? '200px' : '0'}; transition:max-height 0.2s ease;`;
+
+      function makeSubItem({ label, href, onClick, svgPath, active }) {
+        const el = document.createElement(href ? 'a' : 'button');
+        if (href) el.href = href;
+        el.style.cssText = `
+          display:flex; align-items:center; gap:10px;
+          width:100%; padding:6px 12px 6px 36px;
+          background:${active ? 'hsl(var(--primary)/0.15)' : 'transparent'};
+          color:${active ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'};
+          border:none; border-radius:6px; cursor:pointer;
+          font-size:13px; font-weight:500; font-family:inherit;
+          text-decoration:none; text-align:left; transition:background 0.15s;
+          margin-bottom:1px;
+        `;
+        el.onmouseenter = () => { if (!active) { el.style.background = 'hsl(var(--muted))'; el.style.color = 'hsl(var(--foreground))'; } };
+        el.onmouseleave = () => { if (!active) { el.style.background = 'transparent'; el.style.color = 'hsl(var(--muted-foreground))'; } };
+        el.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">${svgPath}</svg><span>${label}</span>`;
+        if (onClick) el.addEventListener('click', onClick);
+        return el;
+      }
+
+      const items = [];
+      if (isAdmin) {
+        items.push(makeSubItem({
+          label: 'Users', href: null, active: false,
+          svgPath: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+          onClick: () => openUsersPanel(),
+        }));
+      }
+      items.push(makeSubItem({
+        label: 'Audit Log', href: '#/audit-log', active: hash.includes('audit-log'),
+        svgPath: '<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',
+        onClick: null,
+      }));
+      items.push(makeSubItem({
+        label: 'Deleted Jobs', href: '#/deleted-jobs', active: hash.includes('deleted-jobs'),
+        svgPath: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+        onClick: null,
+      }));
+
+      items.forEach(item => sub.appendChild(item));
+
+      toggle.addEventListener('click', () => {
+        window._wcAdminOpen = !window._wcAdminOpen;
+        const chevron = toggle.querySelector('#wc-admin-chevron');
+        if (window._wcAdminOpen) {
+          sub.style.maxHeight = '200px';
+          if (chevron) chevron.style.transform = 'rotate(180deg)';
+        } else {
+          sub.style.maxHeight = '0';
+          if (chevron) chevron.style.transform = 'rotate(0deg)';
+        }
+      });
+
+      group.appendChild(toggle);
+      group.appendChild(sub);
+      return group;
+    }
 
     function tryInjectDesktop() {
       const navLinks = document.querySelectorAll('nav a, aside a');
       let settingsLink = null;
       for (const a of navLinks) {
-        if (a.textContent?.trim().includes('Settings')) settingsLink = a;
+        if (a.textContent?.trim() === 'Settings') settingsLink = a;
       }
       if (!settingsLink) return false;
-      if (document.getElementById('wc-audit-nav-desktop')) return true;
+      if (document.getElementById('wc-admin-tools-group')) return true;
 
-      const historyLink = settingsLink.cloneNode(false);
-      historyLink.id = 'wc-audit-nav-desktop';
-      historyLink.href = '#/audit-log';
-      historyLink.removeAttribute('data-testid');
-      historyLink.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
-          <path d="M12 7v5l4 2"/>
-        </svg>
-        <span>Audit Log</span>
-      `;
-      settingsLink.parentElement?.insertBefore(historyLink, settingsLink);
-
-      const deletedLink = settingsLink.cloneNode(false);
-      deletedLink.id = 'wc-deleted-nav-desktop';
-      deletedLink.href = '#/deleted-jobs';
-      deletedLink.removeAttribute('data-testid');
-      deletedLink.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-          <path d="M10 11v6"/><path d="M14 11v6"/>
-          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-        </svg>
-        <span>Deleted Jobs</span>
-      `;
-      settingsLink.parentElement?.insertBefore(deletedLink, settingsLink);
+      const group = buildGroup(settingsLink);
+      settingsLink.parentElement?.insertBefore(group, settingsLink);
       return true;
     }
 
@@ -755,97 +835,13 @@
       setTimeout(() => obs.disconnect(), 10000);
     }
 
-    // Re-inject on React navigation (hash changes wipe the DOM)
+    // Re-inject on navigation (React wipes injected DOM on route changes)
     window.addEventListener('hashchange', () => {
-      setTimeout(tryInjectDesktop, 300);
+      setTimeout(() => {
+        document.getElementById('wc-admin-tools-group')?.remove();
+        tryInjectDesktop();
+      }, 300);
     });
-  }
-
-  function injectUsersNav() {
-    // Guard: only admins get this nav item
-    if (currentUser?.role !== 'admin') return;
-
-    function tryInject() {
-      // Desktop sidebar: find Archive nav link and add Users after it
-      const navLinks = document.querySelectorAll('nav a, aside a');
-      let archiveLink = null;
-      for (const a of navLinks) {
-        if (a.textContent?.trim().includes('Archive')) archiveLink = a;
-      }
-      if (archiveLink && !document.getElementById('wc-users-nav-desktop')) {
-        // Clone just for the classes/attributes, then rebuild children cleanly
-        const usersLink = archiveLink.cloneNode(false);
-        usersLink.id = 'wc-users-nav-desktop';
-        usersLink.removeAttribute('href');
-        usersLink.removeAttribute('data-testid');
-        usersLink.style.cursor = 'pointer';
-        usersLink.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-          <span>Users</span>
-        `;
-        usersLink.addEventListener('click', () => openUsersPanel());
-        archiveLink.parentElement?.insertBefore(usersLink, archiveLink.nextSibling);
-        return true;
-      }
-      return false;
-    }
-
-    function tryInjectMobile() {
-      const mobileMenu = Array.from(document.querySelectorAll('div')).find(el =>
-        el.className?.includes?.('top-[57px]')
-      );
-      if (mobileMenu && !mobileMenu.querySelector('#wc-users-nav-mobile')) {
-        const links = mobileMenu.querySelectorAll('a');
-        let archiveLink = null;
-        for (const a of links) {
-          if (a.textContent?.trim().includes('Archive')) archiveLink = a;
-        }
-        if (archiveLink) {
-          const btn = document.createElement('button');
-          btn.id = 'wc-users-nav-mobile';
-          btn.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-            <span>Users</span>
-          `;
-          // Match the style of existing nav links
-          const existingStyle = window.getComputedStyle(archiveLink);
-          Object.assign(btn.style, {
-            display: 'flex', alignItems: 'center', gap: '12px',
-            width: '100%', padding: '10px 12px',
-            background: 'transparent', border: 'none',
-            borderRadius: '6px', cursor: 'pointer',
-            fontSize: '14px', fontWeight: '500',
-            color: 'inherit', fontFamily: 'inherit',
-          });
-          btn.addEventListener('click', () => openUsersPanel());
-          archiveLink.parentElement?.insertBefore(btn, archiveLink.nextSibling);
-        }
-      }
-    }
-
-    if (!tryInject()) {
-      const obs = new MutationObserver(() => {
-        tryInject();
-        tryInjectMobile();
-      });
-      obs.observe(document.body, { childList: true, subtree: true });
-      setTimeout(() => obs.disconnect(), 10000);
-    }
-
-    // Keep watching for mobile menu opens
-    const mobileObs = new MutationObserver(() => tryInjectMobile());
-    mobileObs.observe(document.body, { childList: true, subtree: true });
-    setTimeout(() => mobileObs.disconnect(), 300000);
   }
 
   function openUsersPanel() {
@@ -1171,8 +1167,7 @@
           // Wait for React to mount then inject
           setTimeout(() => {
             injectLogoutButton();
-            if (user.role === 'admin') injectUsersNav();
-            if (user.role === 'admin' || user.role === 'both') injectAuditNav();
+            if (user.role === 'admin' || user.role === 'both') injectAdminToolsNav();
           }, 1500);
           // Block field techs from accessing the dashboard URL
           if (user.role === 'tech') {
