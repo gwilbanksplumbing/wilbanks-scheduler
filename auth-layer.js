@@ -637,6 +637,8 @@
     injectLogoutButton();
     // Only inject Users nav for admin users on the dashboard
     if (currentUser?.role === 'admin') injectUsersNav();
+    // Inject Audit Log + Deleted Jobs nav for admin/both
+    if (currentUser?.role === 'admin' || currentUser?.role === 'both') injectAuditNav();
     // Start inactivity timer
     startInactivityTimer();
   }
@@ -705,6 +707,60 @@
   }
 
   // ── User Management ────────────────────────────────────────────────────────
+  function injectAuditNav() {
+    const role = currentUser?.role;
+    if (role !== 'admin' && role !== 'both') return;
+
+    function tryInjectDesktop() {
+      const navLinks = document.querySelectorAll('nav a, aside a');
+      let settingsLink = null;
+      for (const a of navLinks) {
+        if (a.textContent?.trim().includes('Settings')) settingsLink = a;
+      }
+      if (!settingsLink) return false;
+      if (document.getElementById('wc-audit-nav-desktop')) return true;
+
+      const historyLink = settingsLink.cloneNode(false);
+      historyLink.id = 'wc-audit-nav-desktop';
+      historyLink.href = '#/audit-log';
+      historyLink.removeAttribute('data-testid');
+      historyLink.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
+          <path d="M12 7v5l4 2"/>
+        </svg>
+        <span>Audit Log</span>
+      `;
+      settingsLink.parentElement?.insertBefore(historyLink, settingsLink);
+
+      const deletedLink = settingsLink.cloneNode(false);
+      deletedLink.id = 'wc-deleted-nav-desktop';
+      deletedLink.href = '#/deleted-jobs';
+      deletedLink.removeAttribute('data-testid');
+      deletedLink.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6"/><path d="M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+        <span>Deleted Jobs</span>
+      `;
+      settingsLink.parentElement?.insertBefore(deletedLink, settingsLink);
+      return true;
+    }
+
+    if (!tryInjectDesktop()) {
+      const obs = new MutationObserver(() => { if (tryInjectDesktop()) obs.disconnect(); });
+      obs.observe(document.body, { childList: true, subtree: true });
+      setTimeout(() => obs.disconnect(), 10000);
+    }
+
+    // Re-inject on React navigation (hash changes wipe the DOM)
+    window.addEventListener('hashchange', () => {
+      setTimeout(tryInjectDesktop, 300);
+    });
+  }
+
   function injectUsersNav() {
     // Guard: only admins get this nav item
     if (currentUser?.role !== 'admin') return;
@@ -1116,6 +1172,7 @@
           setTimeout(() => {
             injectLogoutButton();
             if (user.role === 'admin') injectUsersNav();
+            if (user.role === 'admin' || user.role === 'both') injectAuditNav();
           }, 1500);
           // Block field techs from accessing the dashboard URL
           if (user.role === 'tech') {
