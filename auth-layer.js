@@ -1112,17 +1112,9 @@
 
   function logout() {
     clearToken();
-    currentUser = null;
-    window.__WC_USER = null;
-    document.getElementById('wc-logout-btn')?.remove();
-    document.getElementById('wc-logout-mobile')?.remove();
-    document.getElementById('wc-users-nav-desktop')?.remove();
-    document.getElementById('wc-users-nav-mobile')?.remove();
-    document.getElementById('wc-users-panel')?.remove();
-    renderLogin();
-    // Hide app
-    const root = document.getElementById("root");
-    if (root) root.style.display = "none";
+    // Full page reload on logout — guarantees the next user starts with a
+    // completely clean slate (no stale React state, query cache, or injected DOM)
+    window.location.reload();
   }
 
   // Expose logout globally
