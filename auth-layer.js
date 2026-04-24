@@ -823,16 +823,13 @@
     }
 
     function tryInjectDesktop() {
-      const navLinks = document.querySelectorAll('nav a, aside a');
-      let settingsLink = null;
-      for (const a of navLinks) {
-        if (a.textContent?.trim() === 'Settings') settingsLink = a;
-      }
-      if (!settingsLink) return false;
+      // Anchor to the <nav> inside the sidebar <aside>
+      const nav = document.querySelector('aside nav');
+      if (!nav) return false;
       if (document.getElementById('wc-admin-tools-group')) return true;
 
-      const group = buildGroup(settingsLink);
-      settingsLink.parentElement?.insertBefore(group, settingsLink);
+      const group = buildGroup(nav);
+      nav.appendChild(group);
       return true;
     }
 
