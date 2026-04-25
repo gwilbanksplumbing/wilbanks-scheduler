@@ -23,33 +23,10 @@
     <script type="module" crossorigin src="./assets/index-CQw0lTCk-1777007744.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-BKW36sqV-1776655699849.css">
     <style>
-  html, body { background: #09090b; width: 100%; }
-  body { position: fixed; width: 100%; height: 100%; overflow: hidden; }
-  #root { width: 100%; height: 100%; overflow: hidden; }
+  html { background: #09090b; }
+  body { background: #09090b; margin: 0; }
+  main { -webkit-overflow-scrolling: touch; will-change: transform; }
 </style>
-<script>
-(function(){
-  // In apple-mobile-web-app-capable mode, keyboard floats over content and
-  // leaves a black gap on dismiss. Force GPU repaint of the main scroll area.
-  var lastH = window.innerHeight;
-  window.addEventListener('resize', function(){
-    var nowH = window.innerHeight;
-    if(nowH > lastH) {
-      // keyboard dismissed — height grew back
-      var main = document.querySelector('main');
-      if(main){
-        main.style.transform = 'translateZ(0)';
-        requestAnimationFrame(function(){
-          requestAnimationFrame(function(){
-            main.style.transform = '';
-          });
-        });
-      }
-    }
-    lastH = nowH;
-  });
-})();
-</script>
   </head>
   <body>
     <div id="root"></div>
