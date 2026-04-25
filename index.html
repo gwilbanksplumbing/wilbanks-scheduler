@@ -22,6 +22,26 @@
     <script src="./auth-layer.js?v=1776904576"></script>
     <script type="module" crossorigin src="./assets/index-CQw0lTCk-1777007744.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-BKW36sqV-1776655699849.css">
+  <script>
+(function(){
+  if(!/iPhone|iPad|iPod/.test(navigator.userAgent)) return;
+  // When keyboard dismisses, iOS sometimes leaves a black gap
+  // Force the scroll container back into view
+  document.addEventListener('focusout', function(){
+    setTimeout(function(){
+      var main = document.querySelector('main');
+      if(main){
+        var scrollTop = main.scrollTop;
+        main.style.overflow = 'hidden';
+        main.offsetHeight; // force reflow
+        main.style.overflow = '';
+        main.scrollTop = scrollTop;
+      }
+      window.scrollTo(0, 0);
+    }, 100);
+  }, true);
+})();
+</script>
   </head>
   <body>
     <div id="root"></div>
