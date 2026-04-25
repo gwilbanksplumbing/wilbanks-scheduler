@@ -1158,6 +1158,8 @@
           } catch {}
           // Sync display name into field tech app header
           syncFieldTechName(user);
+          // Inject Admin Tools nav for admin/both roles
+          setTimeout(function() { injectAdminToolsNav(); }, 100);
           // Start inactivity timer
           startInactivityTimer();
           // Wait for React to mount then inject
