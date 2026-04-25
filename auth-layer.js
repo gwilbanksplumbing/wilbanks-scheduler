@@ -637,7 +637,9 @@
     injectLogoutButton();
     // Admin Tools nav is handled by the React app natively
     // Inject Admin Tools nav directly - React renders before __WC_USER is set so we do it via DOM
-    setTimeout(function() { injectAdminToolsNav(); }, 100);
+    setTimeout(function() { injectAdminToolsNav(); }, 300);
+    setTimeout(function() { injectAdminToolsNav(); }, 800);
+    setTimeout(function() { injectAdminToolsNav(); }, 1600);
     // Start inactivity timer
     startInactivityTimer();
   }
@@ -846,6 +848,28 @@
         tryInjectDesktop();
       }, 300);
     });
+
+    // Watch for React wiping the nav (e.g. on refresh) and re-inject immediately
+    const _wcNavObserver = new MutationObserver(function() {
+      if (!document.getElementById('wc-admin-tools-group')) {
+        const nav = document.querySelector('aside nav');
+        if (nav) { buildGroup(nav); nav.appendChild(document.getElementById('wc-admin-tools-group') || buildGroup(nav)); }
+        tryInjectDesktop();
+      }
+    });
+    const _wcNavEl = document.querySelector('aside nav');
+    if (_wcNavEl) _wcNavObserver.observe(_wcNavEl.parentElement || document.body, { childList: true, subtree: true });
+    else {
+      // Nav not mounted yet — observe body until it appears then attach
+      const _wcBodyObs = new MutationObserver(function() {
+        const nav = document.querySelector('aside nav');
+        if (nav) {
+          _wcBodyObs.disconnect();
+          _wcNavObserver.observe(nav.parentElement || document.body, { childList: true, subtree: true });
+        }
+      });
+      _wcBodyObs.observe(document.body, { childList: true, subtree: true });
+    }
   }
 
   function openUsersPanel() {
@@ -1159,7 +1183,10 @@
           // Sync display name into field tech app header
           syncFieldTechName(user);
           // Inject Admin Tools nav for admin/both roles
-          setTimeout(function() { injectAdminToolsNav(); }, 100);
+          // Run at multiple intervals to survive React re-renders from hash restoration
+          setTimeout(function() { injectAdminToolsNav(); }, 300);
+          setTimeout(function() { injectAdminToolsNav(); }, 800);
+          setTimeout(function() { injectAdminToolsNav(); }, 1600);
           // Start inactivity timer
           startInactivityTimer();
           // Wait for React to mount then inject
