@@ -636,9 +636,8 @@
     syncFieldTechName(currentUser);
     injectLogoutButton();
     // Admin Tools nav is handled by the React app natively
-    // Force React re-render so window.__WC_USER role check picks up after login
-    setTimeout(function() { window.dispatchEvent(new Event('popstate')); }, 100);
-    setTimeout(function() { window.dispatchEvent(new Event('popstate')); }, 400);
+    // Inject Admin Tools nav directly - React renders before __WC_USER is set so we do it via DOM
+    setTimeout(function() { injectAdminToolsNav(); }, 100);
     // Start inactivity timer
     startInactivityTimer();
   }
