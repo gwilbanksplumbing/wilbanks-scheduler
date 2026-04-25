@@ -1161,7 +1161,6 @@
           // Wait for React to mount then inject
           setTimeout(() => {
             injectLogoutButton();
-            if (user.role === 'admin' || user.role === 'both') injectAdminToolsNav();
           }, 1500);
           // Block field techs from accessing the dashboard URL
           if (user.role === 'tech') {
