@@ -22,25 +22,7 @@
     <script src="./auth-layer.js?v=1776904576"></script>
     <script type="module" crossorigin src="./assets/index-CQw0lTCk-1777007744.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-BKW36sqV-1776655699849.css">
-  <script>
-(function(){
-  if(!/iPhone|iPad|iPod/.test(navigator.userAgent)) return;
-  // When keyboard dismisses, iOS leaves a black gap where keyboard was.
-  // Fix: force reflow on the scroll container WITHOUT changing scroll position.
-  document.addEventListener('focusout', function(){
-    setTimeout(function(){
-      var main = document.querySelector('main');
-      if(!main) return;
-      var saved = main.scrollTop;
-      main.style.overflow = 'hidden';
-      main.offsetHeight; // trigger reflow
-      main.style.overflow = '';
-      main.scrollTop = saved; // restore exact position
-    }, 50);
-  }, true);
-})();
-</script>
-  </head>
+    </head>
   <body>
     <div id="root"></div>
   </body>
