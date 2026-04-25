@@ -25,20 +25,18 @@
   <script>
 (function(){
   if(!/iPhone|iPad|iPod/.test(navigator.userAgent)) return;
-  // When keyboard dismisses, iOS sometimes leaves a black gap
-  // Force the scroll container back into view
+  // When keyboard dismisses, iOS leaves a black gap where keyboard was.
+  // Fix: force reflow on the scroll container WITHOUT changing scroll position.
   document.addEventListener('focusout', function(){
     setTimeout(function(){
       var main = document.querySelector('main');
-      if(main){
-        var scrollTop = main.scrollTop;
-        main.style.overflow = 'hidden';
-        main.offsetHeight; // force reflow
-        main.style.overflow = '';
-        main.scrollTop = scrollTop;
-      }
-      window.scrollTo(0, 0);
-    }, 100);
+      if(!main) return;
+      var saved = main.scrollTop;
+      main.style.overflow = 'hidden';
+      main.offsetHeight; // trigger reflow
+      main.style.overflow = '';
+      main.scrollTop = saved; // restore exact position
+    }, 50);
   }, true);
 })();
 </script>
