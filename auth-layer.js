@@ -635,9 +635,7 @@
     // so the top-left header always shows the logged-in user's name
     syncFieldTechName(currentUser);
     injectLogoutButton();
-    // Only inject Users nav for admin users on the dashboard
-    // Inject collapsible Admin Tools group for admin/both
-    if (currentUser?.role === 'admin' || currentUser?.role === 'both') injectAdminToolsNav();
+    // Admin Tools nav is handled by the React app natively
     // Start inactivity timer
     startInactivityTimer();
   }
