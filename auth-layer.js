@@ -672,9 +672,9 @@
     injectLogoutButton();
     // Admin Tools nav is handled by the React app natively
     // Inject Admin Tools nav directly - React renders before __WC_USER is set so we do it via DOM
-    setTimeout(function() { injectAdminToolsNav(); }, 300);
-    setTimeout(function() { injectAdminToolsNav(); }, 800);
-    setTimeout(function() { injectAdminToolsNav(); }, 1600);
+    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 300);
+    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 800);
+    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 1600);
     // Start inactivity timer
     startInactivityTimer();
   }
@@ -742,6 +742,49 @@
     } catch {}
   }
 
+  // ── Reports Nav Link (all roles) ────────────────────────────────────────────
+  function injectReportsLink() {
+    // Desktop sidebar
+    const nav = document.querySelector('aside nav');
+    if (nav && !document.getElementById('wc-reports-link')) {
+      const hash = window.location.hash;
+      const isActive = hash.includes('/reports');
+      const link = document.createElement('a');
+      link.id = 'wc-reports-link';
+      link.href = '#/reports';
+      link.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;color:' + (isActive ? 'hsl(var(--primary-foreground))' : 'hsl(var(--muted-foreground))') + ';background:' + (isActive ? 'hsl(var(--primary))' : 'transparent') + ';transition:background 0.15s;margin-bottom:2px;';
+      link.onmouseenter = function() { if (!link.dataset.active) { link.style.background = 'hsl(var(--muted))'; link.style.color = 'hsl(var(--foreground))'; } };
+      link.onmouseleave = function() { if (!link.dataset.active) { link.style.background = 'transparent'; link.style.color = 'hsl(var(--muted-foreground))'; } };
+      if (isActive) link.dataset.active = '1';
+      link.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Reports</span>';
+      nav.appendChild(link);
+    } else if (nav && document.getElementById('wc-reports-link')) {
+      // Update active state on navigation
+      const hash = window.location.hash;
+      const isActive = hash.includes('/reports');
+      const link = document.getElementById('wc-reports-link');
+      link.style.background = isActive ? 'hsl(var(--primary))' : 'transparent';
+      link.style.color = isActive ? 'hsl(var(--primary-foreground))' : 'hsl(var(--muted-foreground))';
+      if (isActive) link.dataset.active = '1'; else delete link.dataset.active;
+    }
+    // Mobile menu
+    const mobileMenu = document.querySelector('.fixed.top-\\[57px\\]');
+    if (mobileMenu && !mobileMenu.querySelector('#wc-reports-mobile-link')) {
+      const hash = window.location.hash;
+      const isActive = hash.includes('/reports');
+      const a = document.createElement('a');
+      a.id = 'wc-reports-mobile-link';
+      a.href = '#/reports';
+      a.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;color:' + (isActive ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))') + ';background:' + (isActive ? 'hsl(var(--primary)/0.1)' : 'transparent') + ';transition:background 0.15s;margin-bottom:1px;';
+      a.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Reports</span>';
+      a.addEventListener('click', function() { setTimeout(function() { mobileMenu.style.display = 'none'; }, 100); });
+      // Insert before the admin section if it exists, otherwise just append
+      const adminSection = mobileMenu.querySelector('#wc-mobile-admin-section');
+      if (adminSection) mobileMenu.insertBefore(a, adminSection);
+      else mobileMenu.appendChild(a);
+    }
+  }
+
   // ── User Management ────────────────────────────────────────────────────────
   function injectAdminToolsNav() {
     const role = currentUser?.role;
@@ -751,7 +794,7 @@
     // Track collapsed state across re-injections; auto-open when on an admin page
     if (typeof window._wcAdminOpen === 'undefined') window._wcAdminOpen = false;
     const _curHash = window.location.hash;
-    if (_curHash.includes('audit-log') || _curHash.includes('deleted-jobs') || _curHash.includes('/settings') || _curHash.includes('/reports')) window._wcAdminOpen = true;
+    if (_curHash.includes('audit-log') || _curHash.includes('deleted-jobs') || _curHash.includes('/settings')) window._wcAdminOpen = true;
 
     function buildGroup(refLink) {
       // Remove old group if present
@@ -761,7 +804,7 @@
       const isDark = document.documentElement.classList.contains('dark');
       const open = window._wcAdminOpen;
       const hash = window.location.hash;
-      const isActive = hash.includes('audit-log') || hash.includes('deleted-jobs') || hash.includes('/settings') || hash.includes('/reports');
+      const isActive = hash.includes('audit-log') || hash.includes('deleted-jobs') || hash.includes('/settings');
 
       const group = document.createElement('div');
       group.id = 'wc-admin-tools-group';
@@ -817,11 +860,6 @@
       }
 
       const items = [];
-      items.push(makeSubItem({
-        label: 'Reports', href: '#/reports', active: hash.includes('/reports'),
-        svgPath: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
-        onClick: null,
-      }));
       items.push(makeSubItem({
         label: 'Settings', href: '#/settings', active: hash.includes('/settings'),
         svgPath: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
@@ -886,6 +924,7 @@
       setTimeout(() => {
         document.getElementById('wc-admin-tools-group')?.remove();
         tryInjectDesktop();
+        injectReportsLink();
       }, 300);
     });
 
@@ -1127,7 +1166,6 @@
         section.appendChild(label);
 
         const adminLinks = [
-          { label: 'Reports', href: '#/reports', svg: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' },
           { label: 'Settings', href: '#/settings', svg: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
           { label: 'Users', href: '#/users', svg: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', adminOnly: true },
           { label: 'Audit Log', href: '#/audit-log', svg: '<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>' },
@@ -1265,9 +1303,9 @@
           syncFieldTechName(user);
           // Inject Admin Tools nav for admin/both roles
           // Run at multiple intervals to survive React re-renders from hash restoration
-          setTimeout(function() { injectAdminToolsNav(); }, 300);
-          setTimeout(function() { injectAdminToolsNav(); }, 800);
-          setTimeout(function() { injectAdminToolsNav(); }, 1600);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 300);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 800);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 1600);
           // Start inactivity timer
           startInactivityTimer();
           // Wait for React to mount then inject
