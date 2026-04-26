@@ -788,8 +788,8 @@
   // ── User Management ────────────────────────────────────────────────────────
   function injectAdminToolsNav() {
     const role = currentUser?.role;
-    if (role !== 'admin' && role !== 'both') return;
-    const isAdmin = role === 'admin';
+    if (role !== 'admin') return;
+    const isAdmin = true;
 
     // Track collapsed state across re-injections; auto-open when on an admin page
     if (typeof window._wcAdminOpen === 'undefined') window._wcAdminOpen = false;
@@ -1154,7 +1154,7 @@
 
       // Inject Admin Tools section for admin/both roles
       const role = currentUser?.role;
-      if ((role === 'admin' || role === 'both') && !mobileMenu.querySelector('#wc-mobile-admin-section')) {
+      if (role === 'admin' && !mobileMenu.querySelector('#wc-mobile-admin-section')) {
         const hash = window.location.hash;
         const section = document.createElement('div');
         section.id = 'wc-mobile-admin-section';
@@ -1301,7 +1301,7 @@
           } catch {}
           // Sync display name into field tech app header
           syncFieldTechName(user);
-          // Inject Admin Tools nav for admin/both roles
+          // Inject Admin Tools nav for admin role only
           // Run at multiple intervals to survive React re-renders from hash restoration
           setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 300);
           setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 800);
