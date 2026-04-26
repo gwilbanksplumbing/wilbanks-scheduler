@@ -1067,11 +1067,51 @@
       return false;
     }
 
-    // Strategy 1b: Dashboard mobile menu — inject Sign Out at bottom of open dropdown
+    // Strategy 1b: Dashboard mobile menu — inject Admin Tools + Sign Out
     function tryInjectMobileMenu() {
       // The mobile dropdown has class 'md:hidden fixed top-[57px]'
       const mobileMenu = document.querySelector('.fixed.top-\\[57px\\]');
-      if (mobileMenu && !mobileMenu.querySelector('#wc-logout-mobile')) {
+      if (!mobileMenu) return;
+
+      // Inject Admin Tools section for admin/both roles
+      const role = currentUser?.role;
+      if ((role === 'admin' || role === 'both') && !mobileMenu.querySelector('#wc-mobile-admin-section')) {
+        const hash = window.location.hash;
+        const section = document.createElement('div');
+        section.id = 'wc-mobile-admin-section';
+        section.style.cssText = 'border-top:1px solid hsl(var(--border));padding:4px 8px;';
+
+        const label = document.createElement('p');
+        label.textContent = 'Admin Tools';
+        label.style.cssText = 'font-size:11px;font-weight:600;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;padding:6px 4px 2px;margin:0;';
+        section.appendChild(label);
+
+        const adminLinks = [
+          { label: 'Settings', href: '#/settings', svg: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
+          { label: 'Users', href: '#/users', svg: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', adminOnly: true },
+          { label: 'Audit Log', href: '#/audit-log', svg: '<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>' },
+          { label: 'Deleted Jobs', href: '#/deleted-jobs', svg: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>' },
+        ];
+
+        adminLinks.forEach(({ label: lbl, href, svg, adminOnly }) => {
+          if (adminOnly && role !== 'admin') return;
+          const active = hash === href || hash.startsWith(href.replace('#', '#'));
+          const a = document.createElement('a');
+          a.href = href;
+          a.style.cssText = `display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;color:${active ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'};background:${active ? 'hsl(var(--primary)/0.1)' : 'transparent'};transition:background 0.15s;margin-bottom:1px;`;
+          a.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">${svg}</svg><span>${lbl}</span>`;
+          a.addEventListener('click', () => {
+            // Close mobile menu after navigation
+            setTimeout(() => { mobileMenu.style.display = 'none'; }, 100);
+          });
+          section.appendChild(a);
+        });
+
+        mobileMenu.appendChild(section);
+      }
+
+      // Inject Sign Out button
+      if (!mobileMenu.querySelector('#wc-logout-mobile')) {
         const btn = buildSidebarBtn();
         btn.id = 'wc-logout-mobile';
         btn.style.marginTop = '4px';
