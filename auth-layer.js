@@ -283,6 +283,40 @@
     .wc-faceid-desc { font-size: 14px; color: #a1a1aa; text-align: center; margin: 0 0 24px; line-height: 1.5; }
     .wc-btn-skip { background: transparent; color: #71717a; font-size: 14px; border: none; cursor: pointer; width: 100%; padding: 8px; text-decoration: underline; }
     .wc-btn-skip:hover { color: #a1a1aa; }
+    /* ── Month Calendar Mobile Optimization ─────────────────────────── */
+    /* Reduce cell height on mobile so days aren't elongated */
+    @media (max-width: 640px) {
+      /* Day cells: reduce minHeight override */
+      [data-datestr] {
+        min-height: 64px !important;
+        padding-top: 24px !important;
+      }
+      /* Day number badge: slightly smaller */
+      [data-datestr] .text-xs.font-semibold.w-6.h-6 {
+        width: 20px !important;
+        height: 20px !important;
+        font-size: 10px !important;
+      }
+      /* Day-of-week header: compact */
+      .grid.grid-cols-7 > div.text-\[11px\] {
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+        font-size: 10px !important;
+      }
+      /* Event chips inside cells: tighter */
+      [data-datestr] .rounded-sm,
+      [data-datestr] [class*="rounded"] {
+        padding: 1px 3px !important;
+        font-size: 9px !important;
+        line-height: 1.2 !important;
+      }
+    }
+    @media (max-width: 390px) {
+      [data-datestr] {
+        min-height: 54px !important;
+        padding-top: 22px !important;
+      }
+    }
   `;
 
   function injectStyles() {
