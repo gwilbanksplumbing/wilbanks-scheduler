@@ -275,6 +275,16 @@
       display: inline-block;
     }
     @keyframes wc-spin { to { transform: rotate(360deg); } }
+    /* Password show/hide toggle */
+    .wc-pw-wrap { position: relative; }
+    .wc-pw-wrap .wc-input { padding-right: 42px; }
+    .wc-eye-btn {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; padding: 4px;
+      color: #71717a; display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent; min-width: 32px; min-height: 32px;
+    }
+    .wc-eye-btn:hover { color: #a1a1aa; }
 
     /* Change password screen */
     .wc-change-pw-hint { font-size: 13px; color: #71717a; margin: 0 0 20px; }
@@ -387,7 +397,7 @@
       </div>
       <div class="wc-field">
         <label class="wc-label" for="wc-password">Password</label>
-        <input class="wc-input" id="wc-password" type="password" placeholder="••••••••" autocomplete="current-password" />
+        <div class="wc-pw-wrap"><input class="wc-input" id="wc-password" type="password" placeholder="••••••••" autocomplete="current-password" /><button type="button" class="wc-eye-btn" id="wc-eye-login" aria-label="Show password" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
       </div>
       <button class="wc-btn wc-btn-primary" id="wc-login-btn">Sign In</button>
       ${faceIdHtml}
@@ -404,6 +414,15 @@
       if (savedUsername) passwordInput?.focus();
       else usernameInput?.focus();
     }, 100);
+
+    const eyeLoginBtn = overlay.querySelector("#wc-eye-login");
+    if (eyeLoginBtn) {
+      eyeLoginBtn.addEventListener("click", () => {
+        const show = passwordInput.type === "password";
+        passwordInput.type = show ? "text" : "password";
+        eyeLoginBtn.innerHTML = show ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+      });
+    }
 
     function showError(msg) {
       errorEl.textContent = msg;
@@ -489,11 +508,11 @@
       <div class="wc-error" id="wc-error"></div>
       <div class="wc-field">
         <label class="wc-label" for="wc-newpw">New Password</label>
-        <input class="wc-input" id="wc-newpw" type="password" placeholder="At least 6 characters" autocomplete="new-password" />
+        <div class="wc-pw-wrap"><input class="wc-input" id="wc-newpw" type="password" placeholder="At least 6 characters" autocomplete="new-password" /><button type="button" class="wc-eye-btn" id="wc-eye-newpw" aria-label="Show password" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
       </div>
       <div class="wc-field">
         <label class="wc-label" for="wc-confirmpw">Confirm Password</label>
-        <input class="wc-input" id="wc-confirmpw" type="password" placeholder="Re-enter password" autocomplete="new-password" />
+        <div class="wc-pw-wrap"><input class="wc-input" id="wc-confirmpw" type="password" placeholder="Re-enter password" autocomplete="new-password" /><button type="button" class="wc-eye-btn" id="wc-eye-confirmpw" aria-label="Show password" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
       </div>
       <button class="wc-btn wc-btn-primary" id="wc-setpw-btn">Set Password & Continue</button>
     `);
@@ -504,6 +523,23 @@
     const errorEl = overlay.querySelector("#wc-error");
 
     setTimeout(() => newPw?.focus(), 100);
+
+    const eyeNewBtn = overlay.querySelector("#wc-eye-newpw");
+    const eyeConfBtn = overlay.querySelector("#wc-eye-confirmpw");
+    if (eyeNewBtn) {
+      eyeNewBtn.addEventListener("click", () => {
+        const show = newPw.type === "password";
+        newPw.type = show ? "text" : "password";
+        eyeNewBtn.innerHTML = show ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+      });
+    }
+    if (eyeConfBtn) {
+      eyeConfBtn.addEventListener("click", () => {
+        const show = confirmPw.type === "password";
+        confirmPw.type = show ? "text" : "password";
+        eyeConfBtn.innerHTML = show ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+      });
+    }
 
     async function doChange() {
       const pw = newPw.value;
