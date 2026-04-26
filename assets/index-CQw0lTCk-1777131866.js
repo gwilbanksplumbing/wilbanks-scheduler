@@ -504,7 +504,7 @@ const _HistoryDrawer=(({customer:_hc,onClose:_hcls})=>{
     const _w=window.open("","_blank","width=900,height=700");
     if(_w){_w.document.write(_html);_w.document.close();setTimeout(()=>{_w.focus();_w.print();},600);}
   };
-  return d.jsx("div",{style:{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"stretch"},children:
+  return d.jsx("div",{style:{position:"fixed",inset:0,top:57,zIndex:9999,display:"flex",alignItems:"stretch"},children:
     d.jsxs("div",{style:{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)"},onClick:_hcls,children:[
       d.jsxs("div",{style:{position:"absolute",right:0,top:0,bottom:0,width:"min(780px,100vw)",background:"hsl(var(--background))",boxShadow:"-4px 0 24px rgba(0,0,0,0.3)",display:"flex",flexDirection:"column",overflow:"hidden"},onClick:e=>e.stopPropagation(),children:[
         d.jsxs("div",{style:{padding:"16px 20px",borderBottom:"1px solid hsl(var(--border))",display:"flex",alignItems:"center",gap:12,flexShrink:0},children:[
