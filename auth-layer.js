@@ -29,15 +29,16 @@
   function saveToken(token) {
     _token = token;
     try {
-      if (isFieldApp()) { localStorage.setItem(TOKEN_KEY, token); }
-      else { sessionStorage.setItem(TOKEN_KEY, token); }
+      // Use localStorage for both apps so JWT survives iOS Safari suspending the tab.
+      // The server enforces the 30-day expiry, so this is safe.
+      localStorage.setItem(TOKEN_KEY, token);
     } catch {}
   }
   function loadToken() {
     if (_token) return _token;
     try {
-      if (isFieldApp()) { _token = localStorage.getItem(TOKEN_KEY); }
-      else { _token = sessionStorage.getItem(TOKEN_KEY); }
+      // Check localStorage first, fall back to sessionStorage for legacy sessions
+      _token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || null;
     } catch {}
     return _token;
   }
