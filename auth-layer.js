@@ -1307,6 +1307,48 @@
     });
   }
 
+  async function injectRecordPaymentDetailPage() {
+    // Only run when the hash is #/appointment/{id}
+    const hash = window.location.hash;
+    const match = hash.match(/^#\/appointment\/(\d+)/);
+    if (!match) return;
+    const id = parseInt(match[1]);
+    if (!id) return;
+
+    // Guard: already injected?
+    if (document.querySelector('[data-wc-rp-detail-id="' + id + '"]')) return;
+
+    const appts = await fetchApptCache();
+    if (!appts) return;
+    const appt = appts.find(function(a) { return a.id === id; });
+    if (!appt) return;
+    if (appt.invoiceStatus !== 'sent' || !appt.qbInvoiceId) return;
+
+    // Find the invoice card — look for an h2 with text content containing "Invoice"
+    const h2s = document.querySelectorAll('h2');
+    let invoiceCard = null;
+    for (var i = 0; i < h2s.length; i++) {
+      if (h2s[i].textContent && h2s[i].textContent.trim() === 'Invoice') {
+        invoiceCard = h2s[i].closest('div.bg-card, div[class*="rounded-lg"], div[class*="border"]');
+        break;
+      }
+    }
+    if (!invoiceCard) return;
+
+    // Build the button
+    var btn = document.createElement('button');
+    btn.setAttribute('data-wc-rp-detail-id', String(id));
+    btn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:7px 14px;margin-top:10px;border-radius:7px;border:none;background:#059669;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Record Payment';
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      showRecordPaymentDialog(appt);
+    });
+
+    // Append inside the invoice card
+    invoiceCard.appendChild(btn);
+  }
+
   function injectLogoutButton() {
     document.getElementById('wc-logout-btn')?.remove();
 
@@ -1456,6 +1498,7 @@
       tryInject();
       tryInjectMobileMenu();
       injectRecordPaymentButtons();
+      injectRecordPaymentDetailPage();
       if (attempts > 2000) observer.disconnect();
     });
     observer.observe(document.body, { childList: true, subtree: true });
@@ -1513,9 +1556,9 @@
           syncFieldTechName(user);
           // Inject Admin Tools nav for admin role only
           // Run at multiple intervals to survive React re-renders from hash restoration
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); }, 300);
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); }, 800);
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); }, 1600);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 300);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 800);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 1600);
           // Start inactivity timer
           startInactivityTimer();
           // Wait for React to mount then inject
