@@ -1378,9 +1378,17 @@
     }
     if (!hasDetail) return;
 
-    const appts = await fetchApptCache();
-    if (!appts) return;
-    const appt = appts.find(function(a) { return a.id === id; });
+    // Fetch this specific appointment directly (list endpoint excludes completed jobs)
+    var appt = null;
+    try {
+      var tok = loadToken();
+      if (!tok) return;
+      var apptRes = await _origFetch(API + '/api/appointments/' + id, {
+        headers: { 'Authorization': 'Bearer ' + tok }
+      });
+      if (!apptRes.ok) return;
+      appt = await apptRes.json();
+    } catch(e) { return; }
     if (!appt) return;
     if ((appt.invoiceStatus !== 'sent' && appt.invoiceStatus !== 'paid') || !appt.qbInvoiceId) return;
 
