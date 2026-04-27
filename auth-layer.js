@@ -1358,12 +1358,10 @@
     const id = parseInt(match[1]);
     if (!id) return;
 
-    // Synchronous lock — prevents double-injection during async fetchApptCache
-    if (_wcDetailInjectLock[id]) return;
-    _wcDetailInjectLock[id] = true;
-
-    // Guard: already injected? (also covers re-nav away and back)
+    // Guard: already injected? (covers re-nav away and back)
     if (document.querySelector('[data-wc-rp-detail-id="' + id + '"]')) return;
+    // Synchronous lock — prevents double-injection during async fetch (set AFTER early returns)
+    if (_wcDetailInjectLock[id]) return;
 
     // Need the space-y-4 container to be present (page has loaded)
     const container = document.querySelector('.space-y-4');
@@ -1391,6 +1389,9 @@
     } catch(e) { return; }
     if (!appt) return;
     if ((appt.invoiceStatus !== 'sent' && appt.invoiceStatus !== 'paid') || !appt.qbInvoiceId) return;
+
+    // Set lock here — all early-return checks have passed
+    _wcDetailInjectLock[id] = true;
 
     // Build a full invoice card matching the other cards on the detail page
     var card = document.createElement('div');
