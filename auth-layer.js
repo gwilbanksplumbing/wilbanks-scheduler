@@ -1167,76 +1167,96 @@
     const methods = ['PayPal', 'Venmo', 'Check', 'Cash', 'Other'];
     let selectedMethod = 'PayPal';
     let amount = appt.invoiceAmount ? parseFloat(appt.invoiceAmount).toFixed(2) : '';
+    let submitting = false;
 
     const card = document.createElement('div');
     card.style.cssText = 'background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:12px;padding:24px;width:100%;max-width:440px;font-family:inherit;';
 
-    function render() {
-      card.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          <span style="font-size:16px;font-weight:600;color:hsl(var(--foreground))">Record Payment Received</span>
-        </div>
-        <div style="background:hsl(var(--muted)/0.4);border-radius:8px;padding:12px;margin-bottom:16px;font-size:14px;">
-          <div style="font-weight:500;color:hsl(var(--foreground));margin-bottom:2px;">${appt.customerName}</div>
-          <div style="color:hsl(var(--muted-foreground));">Invoice #${appt.qbInvoiceNum || ''}</div>
-          ${appt.invoiceAmount ? '<div style="color:hsl(var(--muted-foreground));">Total: $' + parseFloat(appt.invoiceAmount).toLocaleString('en-US',{minimumFractionDigits:2}) + '</div>' : ''}
-        </div>
-        <div style="margin-bottom:16px;">
-          <div style="font-size:13px;font-weight:500;color:hsl(var(--foreground));margin-bottom:8px;">Payment Method</div>
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
-            ${methods.map(m => `<button id="wc-rp-method-${m}" style="padding:10px 4px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid;cursor:pointer;transition:all 0.15s;background:${selectedMethod===m ? methodColors[m] : 'transparent'};color:${selectedMethod===m ? '#fff' : 'hsl(var(--muted-foreground))'};border-color:${selectedMethod===m ? methodColors[m] : 'hsl(var(--border))'}">${m}</button>`).join('')}
-          </div>
-        </div>
-        <div style="margin-bottom:20px;">
-          <div style="font-size:13px;font-weight:500;color:hsl(var(--foreground));margin-bottom:8px;">Amount Received ($)</div>
-          <div style="position:relative;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            <input id="wc-rp-amount" type="number" min="0" step="0.01" placeholder="0.00" value="${amount}"
-              style="width:100%;padding:10px 12px 10px 36px;border-radius:8px;border:1px solid hsl(var(--border));background:hsl(var(--muted)/0.5);color:hsl(var(--foreground));font-size:14px;font-family:inherit;box-sizing:border-box;outline:none;" />
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
-          <button id="wc-rp-cancel" style="padding:9px 16px;border-radius:8px;border:1px solid hsl(var(--border));background:transparent;color:hsl(var(--foreground));font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;">Cancel</button>
-          <button id="wc-rp-submit" style="padding:9px 20px;border-radius:8px;border:none;background:#059669;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Record Payment
-          </button>
-        </div>
-        <div id="wc-rp-status" style="margin-top:12px;font-size:13px;text-align:center;"></div>
-      `;
+    function getMethodBtnsHTML() {
+      return methods.map(function(m) {
+        var sel = selectedMethod === m;
+        return '<button data-wc-rp-m="' + m + '" style="padding:10px 4px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid;cursor:pointer;transition:all 0.15s;' +
+          'background:' + (sel ? methodColors[m] : 'transparent') + ';' +
+          'color:' + (sel ? '#fff' : 'hsl(var(--muted-foreground))') + ';' +
+          'border-color:' + (sel ? methodColors[m] : 'hsl(var(--border))') + ';font-family:inherit;">' + m + '</button>';
+      }).join('');
+    }
 
-      methods.forEach(m => {
-        document.getElementById('wc-rp-method-' + m)?.addEventListener('click', function() {
-          selectedMethod = m;
-          render();
-          setTimeout(() => { document.getElementById('wc-rp-amount')?.focus(); }, 0);
-        });
-      });
+    function buildHTML() {
+      var amtDisplay = amount || '';
+      var invoiceAmt = appt.invoiceAmount ? parseFloat(appt.invoiceAmount).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '';
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+        '<span style="font-size:16px;font-weight:600;color:hsl(var(--foreground))">Record Payment Received</span>' +
+        '</div>' +
+        '<div style="background:hsl(var(--muted)/0.4);border-radius:8px;padding:12px;margin-bottom:16px;font-size:14px;">' +
+        '<div style="font-weight:500;color:hsl(var(--foreground));margin-bottom:2px;">' + (appt.customerName || '') + '</div>' +
+        '<div style="color:hsl(var(--muted-foreground));">Invoice #' + (appt.qbInvoiceNum || '') + '</div>' +
+        (invoiceAmt ? '<div style="color:hsl(var(--muted-foreground));">Total: $' + invoiceAmt + '</div>' : '') +
+        '</div>' +
+        '<div style="margin-bottom:16px;">' +
+        '<div style="font-size:13px;font-weight:500;color:hsl(var(--foreground));margin-bottom:8px;">Payment Method</div>' +
+        '<div data-wc-rp-methods style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">' + getMethodBtnsHTML() + '</div>' +
+        '</div>' +
+        '<div style="margin-bottom:20px;">' +
+        '<div style="font-size:13px;font-weight:500;color:hsl(var(--foreground));margin-bottom:8px;">Amount Received ($)</div>' +
+        '<div style="position:relative;">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' +
+        '<input data-wc-rp-input="amount" type="number" min="0" step="0.01" placeholder="0.00" value="' + amtDisplay + '"' +
+        ' style="width:100%;padding:10px 12px 10px 36px;border-radius:8px;border:1px solid hsl(var(--border));background:hsl(var(--muted)/0.5);color:hsl(var(--foreground));font-size:14px;font-family:inherit;box-sizing:border-box;outline:none;" />' +
+        '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+        '<button data-wc-rp-action="cancel" style="padding:9px 16px;border-radius:8px;border:1px solid hsl(var(--border));background:transparent;color:hsl(var(--foreground));font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;">Cancel</button>' +
+        '<button data-wc-rp-action="submit" style="padding:9px 20px;border-radius:8px;border:none;background:#059669;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+        'Record Payment</button>' +
+        '</div>' +
+        '<div data-wc-rp-status style="margin-top:12px;font-size:13px;text-align:center;"></div>';
+    }
 
-      document.getElementById('wc-rp-cancel')?.addEventListener('click', function() {
-        overlay.remove();
-      });
+    function rerenderMethods() {
+      var grid = card.querySelector('[data-wc-rp-methods]');
+      if (grid) grid.innerHTML = getMethodBtnsHTML();
+    }
 
-      const amtInput = document.getElementById('wc-rp-amount');
-      if (amtInput) {
-        amtInput.addEventListener('input', function() { amount = this.value; });
-        amtInput.addEventListener('change', function() { amount = this.value; });
-        setTimeout(() => amtInput.focus(), 50);
+    // Single event-delegated click handler on the card — no getElementById needed
+    card.addEventListener('click', async function(e) {
+      var target = e.target.closest('[data-wc-rp-m],[data-wc-rp-action]');
+      if (!target) return;
+      e.stopPropagation();
+
+      var m = target.getAttribute('data-wc-rp-m');
+      if (m) {
+        selectedMethod = m;
+        rerenderMethods();
+        var ai = card.querySelector('[data-wc-rp-input="amount"]');
+        if (ai) ai.focus();
+        return;
       }
 
-      document.getElementById('wc-rp-submit')?.addEventListener('click', async function() {
-        const amtVal = document.getElementById('wc-rp-amount')?.value;
+      var action = target.getAttribute('data-wc-rp-action');
+
+      if (action === 'cancel') {
+        overlay.remove();
+        return;
+      }
+
+      if (action === 'submit') {
+        if (submitting) return;
+        var amtEl = card.querySelector('[data-wc-rp-input="amount"]');
+        var amtVal = amtEl ? amtEl.value : amount;
+        var statusEl = card.querySelector('[data-wc-rp-status]');
+        var submitBtn = card.querySelector('[data-wc-rp-action="submit"]');
         if (!amtVal || parseFloat(amtVal) <= 0) {
-          document.getElementById('wc-rp-status').innerHTML = '<span style="color:#ef4444">Please enter a valid amount.</span>';
+          if (statusEl) statusEl.innerHTML = '<span style="color:#ef4444">Please enter a valid amount.</span>';
           return;
         }
-        const submitBtn = document.getElementById('wc-rp-submit');
+        submitting = true;
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
-        const statusEl = document.getElementById('wc-rp-status');
         try {
-          const tok = loadToken();
-          const res = await _origFetch(API + '/api/qb-record-payment', {
+          var tok = loadToken();
+          var res = await _origFetch(API + '/api/qb-record-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },
             body: JSON.stringify({
@@ -1246,29 +1266,48 @@
               paymentMethod: selectedMethod
             })
           });
-          const data = await res.json();
+          var data = await res.json();
           if (!res.ok) throw new Error(data.detail || data.error || 'Failed');
-          const msg = data.paid
+          var msg = data.paid
             ? 'Paid in full via ' + selectedMethod + '.'
             : '$' + parseFloat(amtVal).toFixed(2) + ' recorded. $' + parseFloat(data.balance).toFixed(2) + ' still due.';
           if (statusEl) statusEl.innerHTML = '<span style="color:#34d399">' + msg + '</span>';
-          // Invalidate cache and remove button from card
           _wcApptCache = null;
-          const cardBtn = document.querySelector('[data-wc-rp-id="' + appt.id + '"]');
-          if (cardBtn) cardBtn.remove();
-          setTimeout(() => overlay.remove(), 2000);
-        } catch(e) {
-          if (statusEl) statusEl.innerHTML = '<span style="color:#ef4444">' + (e.message || 'Error') + '</span>';
-          if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Record Payment'; }
+          var rpCardBtn = document.querySelector('[data-wc-rp-id="' + appt.id + '"]');
+          if (rpCardBtn) rpCardBtn.remove();
+          var rpDetailCard = document.querySelector('[data-wc-rp-detail-id="' + appt.id + '"]');
+          if (rpDetailCard) rpDetailCard.remove();
+          setTimeout(function() { overlay.remove(); }, 2500);
+        } catch(err) {
+          if (statusEl) statusEl.innerHTML = '<span style="color:#ef4444">' + (err.message || 'Error') + '</span>';
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Record Payment';
+          }
+          submitting = false;
         }
-      });
-    }
+      }
+    });
 
-    render();
+    // Track amount changes
+    card.addEventListener('input', function(e) {
+      if (e.target.getAttribute('data-wc-rp-input') === 'amount') {
+        amount = e.target.value;
+      }
+    });
+
+    // Build HTML and mount (card is in DOM before any querySelector calls)
+    card.innerHTML = buildHTML();
     overlay.appendChild(card);
     overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
+
+    setTimeout(function() {
+      var ai = card.querySelector('[data-wc-rp-input="amount"]');
+      if (ai) ai.focus();
+    }, 50);
   }
+
 
   async function injectRecordPaymentButtons() {
     // Only in list view (not calendar)
