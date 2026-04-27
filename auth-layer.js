@@ -957,10 +957,13 @@
 
     // Re-inject on navigation (React wipes injected DOM on route changes)
     window.addEventListener('hashchange', () => {
+      // Clear detail injection lock on navigation so re-visiting works
+      _wcDetailInjectLock = {};
       setTimeout(() => {
         document.getElementById('wc-admin-tools-group')?.remove();
         tryInjectDesktop();
         injectReportsLink();
+        injectRecordPaymentDetailPage();
       }, 300);
     });
 
@@ -1346,6 +1349,7 @@
     });
   }
 
+  var _wcDetailInjectLock = {};  // synchronous lock per appointment id
   async function injectRecordPaymentDetailPage() {
     // Only run when the hash is #/appointment/{id}
     const hash = window.location.hash;
@@ -1354,7 +1358,11 @@
     const id = parseInt(match[1]);
     if (!id) return;
 
-    // Guard: already injected?
+    // Synchronous lock — prevents double-injection during async fetchApptCache
+    if (_wcDetailInjectLock[id]) return;
+    _wcDetailInjectLock[id] = true;
+
+    // Guard: already injected? (also covers re-nav away and back)
     if (document.querySelector('[data-wc-rp-detail-id="' + id + '"]')) return;
 
     // Need the space-y-4 container to be present (page has loaded)
