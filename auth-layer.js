@@ -1134,6 +1134,179 @@
     } catch { container.innerHTML = '<div style="color:#ef4444;font-size:14px">Failed to load users.</div>'; }
   }
 
+  // ── Record Payment Injection ──────────────────────────────────────────────
+  // Injects "Record Payment" buttons on sent-invoice rows in the list view.
+  // Renders a modal dialog; calls /api/qb-record-payment on the server.
+  var _wcApptCache = null; // cached appointments
+  var _wcApptCacheTs = 0;
+
+  async function fetchApptCache() {
+    const now = Date.now();
+    if (_wcApptCache && (now - _wcApptCacheTs) < 30000) return _wcApptCache;
+    try {
+      const tok = loadToken();
+      if (!tok) return null;
+      const res = await _origFetch(API + '/api/appointments', {
+        headers: { Authorization: 'Bearer ' + tok }
+      });
+      if (!res.ok) return null;
+      _wcApptCache = await res.json();
+      _wcApptCacheTs = now;
+      return _wcApptCache;
+    } catch { return null; }
+  }
+
+  function showRecordPaymentDialog(appt) {
+    document.getElementById('wc-rp-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'wc-rp-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px;';
+
+    const methodColors = { PayPal: '#003087', Venmo: '#3D95CE', Check: '#6b7280', Cash: '#166534', Other: '#4b5563' };
+    const methods = ['PayPal', 'Venmo', 'Check', 'Cash', 'Other'];
+    let selectedMethod = 'PayPal';
+    let amount = appt.invoiceAmount ? parseFloat(appt.invoiceAmount).toFixed(2) : '';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:12px;padding:24px;width:100%;max-width:440px;font-family:inherit;';
+
+    function render() {
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span style="font-size:16px;font-weight:600;color:hsl(var(--foreground))">Record Payment Received</span>
+        </div>
+        <div style="background:hsl(var(--muted)/0.4);border-radius:8px;padding:12px;margin-bottom:16px;font-size:14px;">
+          <div style="font-weight:500;color:hsl(var(--foreground));margin-bottom:2px;">${appt.customerName}</div>
+          <div style="color:hsl(var(--muted-foreground));">Invoice #${appt.qbInvoiceNum || ''}</div>
+          ${appt.invoiceAmount ? '<div style="color:hsl(var(--muted-foreground));">Total: $' + parseFloat(appt.invoiceAmount).toLocaleString('en-US',{minimumFractionDigits:2}) + '</div>' : ''}
+        </div>
+        <div style="margin-bottom:16px;">
+          <div style="font-size:13px;font-weight:500;color:hsl(var(--foreground));margin-bottom:8px;">Payment Method</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
+            ${methods.map(m => `<button id="wc-rp-method-${m}" style="padding:10px 4px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid;cursor:pointer;transition:all 0.15s;background:${selectedMethod===m ? methodColors[m] : 'transparent'};color:${selectedMethod===m ? '#fff' : 'hsl(var(--muted-foreground))'};border-color:${selectedMethod===m ? methodColors[m] : 'hsl(var(--border))'}">${m}</button>`).join('')}
+          </div>
+        </div>
+        <div style="margin-bottom:20px;">
+          <div style="font-size:13px;font-weight:500;color:hsl(var(--foreground));margin-bottom:8px;">Amount Received ($)</div>
+          <div style="position:relative;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--muted-foreground))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <input id="wc-rp-amount" type="number" min="0" step="0.01" placeholder="0.00" value="${amount}"
+              style="width:100%;padding:10px 12px 10px 36px;border-radius:8px;border:1px solid hsl(var(--border));background:hsl(var(--muted)/0.5);color:hsl(var(--foreground));font-size:14px;font-family:inherit;box-sizing:border-box;outline:none;" />
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button id="wc-rp-cancel" style="padding:9px 16px;border-radius:8px;border:1px solid hsl(var(--border));background:transparent;color:hsl(var(--foreground));font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;">Cancel</button>
+          <button id="wc-rp-submit" style="padding:9px 20px;border-radius:8px;border:none;background:#059669;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Record Payment
+          </button>
+        </div>
+        <div id="wc-rp-status" style="margin-top:12px;font-size:13px;text-align:center;"></div>
+      `;
+
+      methods.forEach(m => {
+        document.getElementById('wc-rp-method-' + m)?.addEventListener('click', function() {
+          selectedMethod = m;
+          render();
+          setTimeout(() => { document.getElementById('wc-rp-amount')?.focus(); }, 0);
+        });
+      });
+
+      document.getElementById('wc-rp-cancel')?.addEventListener('click', function() {
+        overlay.remove();
+      });
+
+      const amtInput = document.getElementById('wc-rp-amount');
+      if (amtInput) {
+        amtInput.addEventListener('input', function() { amount = this.value; });
+        amtInput.addEventListener('change', function() { amount = this.value; });
+        setTimeout(() => amtInput.focus(), 50);
+      }
+
+      document.getElementById('wc-rp-submit')?.addEventListener('click', async function() {
+        const amtVal = document.getElementById('wc-rp-amount')?.value;
+        if (!amtVal || parseFloat(amtVal) <= 0) {
+          document.getElementById('wc-rp-status').innerHTML = '<span style="color:#ef4444">Please enter a valid amount.</span>';
+          return;
+        }
+        const submitBtn = document.getElementById('wc-rp-submit');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
+        const statusEl = document.getElementById('wc-rp-status');
+        try {
+          const tok = loadToken();
+          const res = await _origFetch(API + '/api/qb-record-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },
+            body: JSON.stringify({
+              appointmentId: appt.id,
+              qbInvoiceId: appt.qbInvoiceId,
+              amount: amtVal,
+              paymentMethod: selectedMethod
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || data.error || 'Failed');
+          const msg = data.paid
+            ? 'Paid in full via ' + selectedMethod + '.'
+            : '$' + parseFloat(amtVal).toFixed(2) + ' recorded. $' + parseFloat(data.balance).toFixed(2) + ' still due.';
+          if (statusEl) statusEl.innerHTML = '<span style="color:#34d399">' + msg + '</span>';
+          // Invalidate cache and remove button from card
+          _wcApptCache = null;
+          const cardBtn = document.querySelector('[data-wc-rp-id="' + appt.id + '"]');
+          if (cardBtn) cardBtn.remove();
+          setTimeout(() => overlay.remove(), 2000);
+        } catch(e) {
+          if (statusEl) statusEl.innerHTML = '<span style="color:#ef4444">' + (e.message || 'Error') + '</span>';
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Record Payment'; }
+        }
+      });
+    }
+
+    render();
+    overlay.appendChild(card);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+  }
+
+  async function injectRecordPaymentButtons() {
+    // Only in list view (not calendar)
+    const cards = document.querySelectorAll('[data-testid^="card-appointment-"]');
+    if (!cards.length) return;
+
+    const appts = await fetchApptCache();
+    if (!appts) return;
+
+    const apptMap = {};
+    appts.forEach(a => { apptMap[a.id] = a; });
+
+    cards.forEach(card => {
+      const testId = card.getAttribute('data-testid') || '';
+      const id = parseInt(testId.replace('card-appointment-', ''));
+      if (!id) return;
+      const appt = apptMap[id];
+      if (!appt) return;
+      if (appt.invoiceStatus !== 'sent' || !appt.qbInvoiceId) return;
+      // Only inject once per card
+      if (card.querySelector('[data-wc-rp-id]')) return;
+
+      const btn = document.createElement('button');
+      btn.setAttribute('data-wc-rp-id', String(id));
+      btn.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;border:none;background:#059669;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:6px;flex-shrink:0;';
+      btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Record Payment';
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        showRecordPaymentDialog(appt);
+      });
+
+      // Find the bottom info row of the card and append the button there
+      const lastDiv = card.lastElementChild;
+      if (lastDiv) lastDiv.appendChild(btn);
+      else card.appendChild(btn);
+    });
+  }
+
   function injectLogoutButton() {
     document.getElementById('wc-logout-btn')?.remove();
 
@@ -1282,6 +1455,7 @@
       attempts++;
       tryInject();
       tryInjectMobileMenu();
+      injectRecordPaymentButtons();
       if (attempts > 2000) observer.disconnect();
     });
     observer.observe(document.body, { childList: true, subtree: true });
@@ -1339,9 +1513,9 @@
           syncFieldTechName(user);
           // Inject Admin Tools nav for admin role only
           // Run at multiple intervals to survive React re-renders from hash restoration
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 300);
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 800);
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 1600);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); }, 300);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); }, 800);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); }, 1600);
           // Start inactivity timer
           startInactivityTimer();
           // Wait for React to mount then inject
