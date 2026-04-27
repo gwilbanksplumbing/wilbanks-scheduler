@@ -1318,35 +1318,89 @@
     // Guard: already injected?
     if (document.querySelector('[data-wc-rp-detail-id="' + id + '"]')) return;
 
+    // Need the space-y-4 container to be present (page has loaded)
+    const container = document.querySelector('.space-y-4');
+    if (!container) return;
+
+    // Need at least the Tech Notes h2 to be present before we inject
+    var hasDetail = false;
+    var h2s = document.querySelectorAll('h2');
+    for (var j = 0; j < h2s.length; j++) {
+      if (h2s[j].textContent && h2s[j].textContent.trim() === 'Tech Notes') { hasDetail = true; break; }
+      if (h2s[j].textContent && h2s[j].textContent.trim() === 'Customer') { hasDetail = true; break; }
+    }
+    if (!hasDetail) return;
+
     const appts = await fetchApptCache();
     if (!appts) return;
     const appt = appts.find(function(a) { return a.id === id; });
     if (!appt) return;
     if (appt.invoiceStatus !== 'sent' || !appt.qbInvoiceId) return;
 
-    // Find the invoice card — look for an h2 with text content containing "Invoice"
-    const h2s = document.querySelectorAll('h2');
-    let invoiceCard = null;
-    for (var i = 0; i < h2s.length; i++) {
-      if (h2s[i].textContent && h2s[i].textContent.trim() === 'Invoice') {
-        invoiceCard = h2s[i].closest('div.bg-card, div[class*="rounded-lg"], div[class*="border"]');
-        break;
-      }
-    }
-    if (!invoiceCard) return;
+    // Build a full invoice card matching the other cards on the detail page
+    var card = document.createElement('div');
+    card.setAttribute('data-wc-rp-detail-id', String(id));
+    card.className = 'bg-card border border-border rounded-lg p-5';
 
-    // Build the button
+    // Card header row
+    var header = document.createElement('h2');
+    header.style.cssText = 'font-size:14px;font-weight:600;color:hsl(var(--foreground));margin-bottom:12px;display:flex;align-items:center;gap:8px;';
+    header.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--primary))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Invoice';
+    card.appendChild(header);
+
+    // Info rows
+    var info = document.createElement('div');
+    info.style.cssText = 'display:flex;flex-direction:column;gap:6px;font-size:14px;';
+
+    if (appt.qbInvoiceNum) {
+      var numRow = document.createElement('div');
+      numRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+      numRow.innerHTML = '<span style="color:hsl(var(--muted-foreground))">Invoice #:</span>' +
+        '<span style="color:hsl(var(--foreground));font-weight:500">' + appt.qbInvoiceNum + '</span>' +
+        (appt.qbInvoiceId ? '<a href="https://wilbanks-server-production.up.railway.app/api/qb-invoice-pdf/' + id + '" target="_blank" style="color:hsl(var(--primary));font-size:12px;text-decoration:none;margin-left:6px;">View Invoice</a>' : '');
+      info.appendChild(numRow);
+    }
+
+    if (appt.invoiceAmount) {
+      var amtRow = document.createElement('div');
+      amtRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+      var amt = parseFloat(appt.invoiceAmount).toLocaleString('en-US', { minimumFractionDigits: 2 });
+      amtRow.innerHTML = '<span style="color:hsl(var(--muted-foreground))">Amount:</span>' +
+        '<span style="color:#34d399;font-weight:600">$' + amt + '</span>';
+      info.appendChild(amtRow);
+    }
+
+    // Record Payment button
+    var btnWrap = document.createElement('div');
+    btnWrap.style.cssText = 'padding-top:8px;';
     var btn = document.createElement('button');
-    btn.setAttribute('data-wc-rp-detail-id', String(id));
-    btn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:7px 14px;margin-top:10px;border-radius:7px;border:none;background:#059669;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;';
+    btn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px 14px;border-radius:7px;border:none;background:#059669;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background 0.15s;';
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Record Payment';
+    btn.addEventListener('mouseenter', function() { btn.style.background = '#047857'; });
+    btn.addEventListener('mouseleave', function() { btn.style.background = '#059669'; });
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       showRecordPaymentDialog(appt);
     });
+    btnWrap.appendChild(btn);
+    info.appendChild(btnWrap);
 
-    // Append inside the invoice card
-    invoiceCard.appendChild(btn);
+    card.appendChild(info);
+
+    // Insert before the "Send Notifications" card, or append to container
+    var sendNotifCard = null;
+    var allH2s = container.querySelectorAll('h2');
+    for (var k = 0; k < allH2s.length; k++) {
+      if (allH2s[k].textContent && allH2s[k].textContent.includes('Send Notifications')) {
+        sendNotifCard = allH2s[k].closest('.bg-card') || allH2s[k].closest('[class*="rounded-lg"]') || allH2s[k].parentElement;
+        break;
+      }
+    }
+    if (sendNotifCard && sendNotifCard.parentElement === container) {
+      container.insertBefore(card, sendNotifCard);
+    } else {
+      container.appendChild(card);
+    }
   }
 
   function injectLogoutButton() {
