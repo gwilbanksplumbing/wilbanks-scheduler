@@ -1326,7 +1326,7 @@
       if (!id) return;
       const appt = apptMap[id];
       if (!appt) return;
-      if (appt.invoiceStatus !== 'sent' || !appt.qbInvoiceId) return;
+      if ((appt.invoiceStatus !== 'sent' && appt.invoiceStatus !== 'paid') || !appt.qbInvoiceId) return;
       // Only inject once per card
       if (card.querySelector('[data-wc-rp-id]')) return;
 
@@ -1374,7 +1374,7 @@
     if (!appts) return;
     const appt = appts.find(function(a) { return a.id === id; });
     if (!appt) return;
-    if (appt.invoiceStatus !== 'sent' || !appt.qbInvoiceId) return;
+    if ((appt.invoiceStatus !== 'sent' && appt.invoiceStatus !== 'paid') || !appt.qbInvoiceId) return;
 
     // Build a full invoice card matching the other cards on the detail page
     var card = document.createElement('div');
@@ -1409,19 +1409,26 @@
       info.appendChild(amtRow);
     }
 
-    // Record Payment button
+    // Record Payment button (only if invoice is still unpaid)
     var btnWrap = document.createElement('div');
     btnWrap.style.cssText = 'padding-top:8px;';
-    var btn = document.createElement('button');
-    btn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px 14px;border-radius:7px;border:none;background:#059669;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background 0.15s;';
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Record Payment';
-    btn.addEventListener('mouseenter', function() { btn.style.background = '#047857'; });
-    btn.addEventListener('mouseleave', function() { btn.style.background = '#059669'; });
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      showRecordPaymentDialog(appt);
-    });
-    btnWrap.appendChild(btn);
+    if (appt.invoiceStatus === 'sent') {
+      var btn = document.createElement('button');
+      btn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px 14px;border-radius:7px;border:none;background:#059669;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background 0.15s;';
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Record Payment';
+      btn.addEventListener('mouseenter', function() { btn.style.background = '#047857'; });
+      btn.addEventListener('mouseleave', function() { btn.style.background = '#059669'; });
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        showRecordPaymentDialog(appt);
+      });
+      btnWrap.appendChild(btn);
+    } else {
+      var paidBadge = document.createElement('div');
+      paidBadge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:7px;background:rgba(52,211,153,0.15);color:#34d399;font-size:13px;font-weight:600;font-family:inherit;';
+      paidBadge.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Paid';
+      btnWrap.appendChild(paidBadge);
+    }
     info.appendChild(btnWrap);
 
     card.appendChild(info);
