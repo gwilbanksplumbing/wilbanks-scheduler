@@ -708,11 +708,14 @@
     injectLogoutButton();
     // Admin Tools nav is handled by the React app natively
     // Inject Admin Tools nav directly - React renders before __WC_USER is set so we do it via DOM
-    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 300);
-    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 800);
-    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 1600);
+    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectQBLoginLink(); }, 300);
+    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectQBLoginLink(); }, 800);
+    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectQBLoginLink(); }, 1600);
     // Start inactivity timer
     startInactivityTimer();
+    // Check QB session on login and start background poll
+    checkQBSessionOnLogin();
+    startQBSessionPoll();
   }
 
   // ── Inactivity timeout ─────────────────────────────────────────────────────
@@ -1673,11 +1676,14 @@
           syncFieldTechName(user);
           // Inject Admin Tools nav for admin role only
           // Run at multiple intervals to survive React re-renders from hash restoration
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 300);
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 800);
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 1600);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectQBLoginLink(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 300);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectQBLoginLink(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 800);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectQBLoginLink(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 1600);
           // Start inactivity timer
           startInactivityTimer();
+          // Check QB session and start background poll
+          checkQBSessionOnLogin();
+          startQBSessionPoll();
           // Wait for React to mount then inject
           setTimeout(() => {
             injectLogoutButton();
@@ -1733,6 +1739,299 @@
   document.addEventListener('visibilitychange', _saveHash);
   window.addEventListener('pagehide', _saveHash);
   window.addEventListener('beforeunload', _saveHash);
+
+  // ── QB Login Nav Link ──────────────────────────────────────────────────────
+  // Shows under Reports in sidebar. Green when session valid, red when expired.
+  // Visible only to users with qbSessionRefresh feature or admin/both roles.
+  var _qbSessionValid = null; // null=unknown, true=valid, false=expired
+
+  function canUseQBLogin() {
+    const u = currentUser;
+    if (!u) return false;
+    if (u.role === 'admin' || u.role === 'both') return true;
+    const feats = u.features || {};
+    return !!feats.qbSessionRefresh;
+  }
+
+  function injectQBLoginLink() {
+    if (!canUseQBLogin()) return;
+    const nav = document.querySelector('aside nav');
+    if (!nav) return;
+    const hash = window.location.hash;
+    const isActive = hash.includes('/qb-login');
+    const color = _qbSessionValid === false ? '#ef4444' : _qbSessionValid === true ? '#22c55e' : 'hsl(var(--muted-foreground))';
+    const dot = _qbSessionValid === false ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-left:auto;animation:wc-pulse 1.5s infinite"></span>'
+      : _qbSessionValid === true ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-left:auto"></span>' : '';
+
+    if (!document.getElementById('wc-qb-login-link')) {
+      const link = document.createElement('a');
+      link.id = 'wc-qb-login-link';
+      link.href = '#/qb-login';
+      link.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;color:' + (isActive ? 'hsl(var(--primary-foreground))' : color) + ';background:' + (isActive ? 'hsl(var(--primary))' : 'transparent') + ';transition:background 0.15s;margin-bottom:2px;';
+      link.onmouseenter = function() { if (!link.dataset.active) { link.style.background = 'hsl(var(--muted))'; link.style.color = 'hsl(var(--foreground))'; } };
+      link.onmouseleave = function() { if (!link.dataset.active) { link.style.background = 'transparent'; link.style.color = color; } };
+      if (isActive) link.dataset.active = '1';
+      link.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>QuickBooks Login</span>' + dot;
+      // Insert after Reports link if present, otherwise append
+      const reportsLink = document.getElementById('wc-reports-link');
+      if (reportsLink && reportsLink.nextSibling) nav.insertBefore(link, reportsLink.nextSibling);
+      else nav.appendChild(link);
+    } else {
+      // Update existing link color and active state
+      const link = document.getElementById('wc-qb-login-link');
+      link.style.color = isActive ? 'hsl(var(--primary-foreground))' : color;
+      link.style.background = isActive ? 'hsl(var(--primary))' : 'transparent';
+      if (isActive) link.dataset.active = '1'; else delete link.dataset.active;
+      link.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>QuickBooks Login</span>' + dot;
+    }
+
+    // Render QB Login page when hash matches
+    window.addEventListener('hashchange', function() {
+      if (window.location.hash === '#/qb-login') renderQBLoginPage();
+      injectQBLoginLink();
+    }, { once: true });
+    if (isActive) renderQBLoginPage();
+  }
+
+  // ── QB Session Toast ───────────────────────────────────────────────────────
+  var _qbToast = null;
+
+  function showQBToast(valid) {
+    if (_qbToast) { _qbToast.remove(); _qbToast = null; }
+    const toast = document.createElement('div');
+    _qbToast = toast;
+    toast.id = 'wc-qb-toast';
+    const bg = valid ? '#14532d' : '#450a0a';
+    const border = valid ? '#16a34a' : '#dc2626';
+    const textColor = valid ? '#86efac' : '#fca5a5';
+    toast.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;background:${bg};border:1px solid ${border};border-radius:10px;padding:14px 18px;max-width:340px;box-shadow:0 4px 24px rgba(0,0,0,0.4);font-family:inherit;animation:wc-toast-in 0.3s ease;`;
+    if (!valid) {
+      toast.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <div style="font-size:18px;margin-top:1px">&#128274;</div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#fef2f2;margin-bottom:4px">QuickBooks Session Expired</div>
+            <div style="font-size:13px;color:${textColor};line-height:1.4">Click <a href="#/qb-login" onclick="document.getElementById('wc-qb-toast').style.display='none'" style="color:#f87171;font-weight:600;text-decoration:underline">QuickBooks Login</a> in the sidebar to reconnect.</div>
+          </div>
+          <button onclick="this.closest('#wc-qb-toast').style.display='none'" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:18px;padding:0;margin-left:auto;line-height:1">&times;</button>
+        </div>`;
+    } else {
+      toast.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:18px">&#9989;</div>
+          <div style="font-size:13px;font-weight:500;color:${textColor}">QuickBooks session is active</div>
+          <button onclick="this.closest('#wc-qb-toast').style.display='none'" style="background:none;border:none;color:#86efac;cursor:pointer;font-size:18px;padding:0;margin-left:auto;line-height:1">&times;</button>
+        </div>`;
+      // Auto-dismiss green toast after 5 seconds
+      setTimeout(function() { if (toast.parentNode) toast.remove(); _qbToast = null; }, 5000);
+    }
+    // Add keyframe animation if not present
+    if (!document.getElementById('wc-qb-styles')) {
+      const style = document.createElement('style');
+      style.id = 'wc-qb-styles';
+      style.textContent = '@keyframes wc-toast-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}} @keyframes wc-pulse{0%,100%{opacity:1}50%{opacity:0.4}}';
+      document.head.appendChild(style);
+    }
+    document.body.appendChild(toast);
+  }
+
+  function checkQBSessionOnLogin() {
+    if (!canUseQBLogin()) return;
+    const token = loadToken();
+    if (!token) return;
+    fetch(API + '/api/qb-session/status', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      _qbSessionValid = !!d.valid;
+      injectQBLoginLink();
+      showQBToast(_qbSessionValid);
+    }).catch(function() { _qbSessionValid = null; });
+  }
+
+  // ── QB Session Background Poll (every 10 min) ──────────────────────────────
+  var _qbPollInterval = null;
+
+  function startQBSessionPoll() {
+    if (!canUseQBLogin()) return;
+    if (_qbPollInterval) clearInterval(_qbPollInterval);
+    _qbPollInterval = setInterval(function() {
+      const token = loadToken();
+      if (!token) return;
+      fetch(API + '/api/qb-session/status', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        const wasValid = _qbSessionValid;
+        _qbSessionValid = !!d.valid;
+        injectQBLoginLink();
+        // Show toast only if session just dropped (was valid, now expired)
+        if (wasValid === true && _qbSessionValid === false) {
+          showQBToast(false);
+        }
+      }).catch(function() {});
+    }, 10 * 60 * 1000); // 10 minutes
+  }
+
+  // ── QB Login Page ──────────────────────────────────────────────────────────
+  var _qbPageRendered = false;
+
+  function renderQBLoginPage() {
+    // Only render on dashboard, not field app
+    if (window.location.href.includes('fieldtech')) return;
+
+    // Make React container invisible and show our page
+    const main = document.querySelector('main');
+    const root = document.getElementById('root');
+
+    // Remove old page if present
+    const old = document.getElementById('wc-qb-login-page');
+    if (old) old.remove();
+
+    const page = document.createElement('div');
+    page.id = 'wc-qb-login-page';
+    page.style.cssText = 'position:fixed;top:0;left:256px;right:0;bottom:0;background:hsl(var(--background));overflow-y:auto;padding:32px;z-index:100;display:flex;flex-direction:column;align-items:center;';
+
+    const token = loadToken();
+    const lastRefreshed = _qbLastRefreshed ? new Date(_qbLastRefreshed).toLocaleString() : 'Unknown';
+    const statusColor = _qbSessionValid === true ? '#22c55e' : _qbSessionValid === false ? '#ef4444' : '#f59e0b';
+    const statusText = _qbSessionValid === true ? 'Active' : _qbSessionValid === false ? 'Expired' : 'Unknown';
+    const statusDot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${statusColor};margin-right:8px"></span>`;
+
+    page.innerHTML = `
+      <div style="max-width:560px;width:100%;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--foreground))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+          <h1 style="font-size:22px;font-weight:700;color:hsl(var(--foreground));margin:0">QuickBooks Login</h1>
+        </div>
+
+        <div style="background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:12px;padding:24px;margin-bottom:20px">
+          <div style="font-size:13px;color:hsl(var(--muted-foreground));margin-bottom:8px">Session Status</div>
+          <div style="display:flex;align-items:center;font-size:16px;font-weight:600;color:${statusColor};margin-bottom:12px">${statusDot}${statusText}</div>
+          <div style="font-size:12px;color:hsl(var(--muted-foreground))">Last refreshed: ${lastRefreshed}</div>
+        </div>
+
+        <div style="background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:12px;padding:24px;margin-bottom:20px">
+          <div style="font-size:14px;font-weight:600;color:hsl(var(--foreground));margin-bottom:8px">How to Refresh</div>
+          <ol style="font-size:13px;color:hsl(var(--muted-foreground));margin:0;padding-left:20px;line-height:2">
+            <li>Click <strong style="color:hsl(var(--foreground))">Open QuickBooks Login</strong> below</li>
+            <li>A new tab opens — log into QuickBooks normally</li>
+            <li>Once logged in, click <strong style="color:hsl(var(--foreground))">Capture Session</strong> on that page</li>
+            <li>Return here — the status will update to Active</li>
+          </ol>
+        </div>
+
+        <button id="wc-qb-open-btn" style="width:100%;padding:14px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:12px;transition:background 0.15s"
+          onmouseenter="this.style.background='#2563eb'" onmouseleave="this.style.background='#3b82f6'">
+          Open QuickBooks Login
+        </button>
+
+        <button id="wc-qb-check-btn" style="width:100%;padding:12px;background:hsl(var(--muted));color:hsl(var(--foreground));border:1px solid hsl(var(--border));border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:background 0.15s"
+          onmouseenter="this.style.background='hsl(var(--accent))'" onmouseleave="this.style.background='hsl(var(--muted))'">
+          Check Session Status
+        </button>
+
+        <div id="wc-qb-page-status" style="margin-top:16px;font-size:13px;text-align:center;min-height:20px"></div>
+      </div>`;
+
+    // Hide React's main content
+    if (main) main.style.display = 'none';
+    document.body.appendChild(page);
+
+    // Open QB Login button handler
+    document.getElementById('wc-qb-open-btn').addEventListener('click', function() {
+      const btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Opening...';
+      fetch(API + '/api/qb-session/start-capture', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.capturePageUrl) {
+          window.open(d.capturePageUrl, '_blank');
+          btn.textContent = 'Waiting for capture...';
+          // Poll for completion
+          const pollCapture = setInterval(function() {
+            fetch(API + '/api/qb-session/poll', {
+              headers: { 'Authorization': 'Bearer ' + token }
+            }).then(function(r) { return r.json(); }).then(function(pd) {
+              if (pd.status === 'captured') {
+                clearInterval(pollCapture);
+                _qbSessionValid = true;
+                btn.disabled = false;
+                btn.textContent = 'Open QuickBooks Login';
+                const statusDiv = document.getElementById('wc-qb-page-status');
+                if (statusDiv) { statusDiv.style.color = '#22c55e'; statusDiv.textContent = 'Session captured successfully!'; }
+                injectQBLoginLink();
+                // Refresh the page to show updated status
+                setTimeout(function() { renderQBLoginPage(); }, 1500);
+              }
+            }).catch(function() {});
+          }, 3000);
+          // Stop polling after 5 minutes
+          setTimeout(function() {
+            clearInterval(pollCapture);
+            if (btn.textContent === 'Waiting for capture...') {
+              btn.disabled = false;
+              btn.textContent = 'Open QuickBooks Login';
+            }
+          }, 5 * 60 * 1000);
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Open QuickBooks Login';
+        }
+      }).catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Open QuickBooks Login';
+      });
+    });
+
+    // Check status button handler
+    document.getElementById('wc-qb-check-btn').addEventListener('click', function() {
+      const btn = this;
+      const statusDiv = document.getElementById('wc-qb-page-status');
+      btn.disabled = true;
+      btn.textContent = 'Checking...';
+      statusDiv.style.color = 'hsl(var(--muted-foreground))';
+      statusDiv.textContent = 'Checking session with QuickBooks...';
+      fetch(API + '/api/qb-session/status', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        _qbSessionValid = !!d.valid;
+        _qbLastRefreshed = d.lastRefreshed;
+        btn.disabled = false;
+        btn.textContent = 'Check Session Status';
+        injectQBLoginLink();
+        // Refresh the page
+        setTimeout(function() { renderQBLoginPage(); }, 300);
+      }).catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Check Session Status';
+        statusDiv.style.color = '#ef4444';
+        statusDiv.textContent = 'Could not reach server. Try again.';
+      });
+    });
+
+    // Listen for hash changes away from qb-login to restore main
+    function onHashChange() {
+      if (!window.location.hash.includes('/qb-login')) {
+        const p = document.getElementById('wc-qb-login-page');
+        if (p) p.remove();
+        if (main) main.style.display = '';
+        window.removeEventListener('hashchange', onHashChange);
+      }
+    }
+    window.addEventListener('hashchange', onHashChange);
+  }
+
+  var _qbLastRefreshed = null;
+
+  // Re-render QB page on hashchange if needed
+  window.addEventListener('hashchange', function() {
+    if (window.location.hash === '#/qb-login' && canUseQBLogin()) {
+      setTimeout(renderQBLoginPage, 100);
+    }
+    // Update QB link active state
+    setTimeout(injectQBLoginLink, 50);
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bootstrap);
