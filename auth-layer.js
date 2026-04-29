@@ -1910,11 +1910,20 @@
         </div>
 
         <div style="background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:12px;padding:24px;margin-bottom:20px">
-          <div style="font-size:14px;font-weight:600;color:hsl(var(--foreground));margin-bottom:8px">How to Refresh</div>
-          <ol style="font-size:13px;color:hsl(var(--muted-foreground));margin:0;padding-left:20px;line-height:2">
-            <li>Click <strong style="color:hsl(var(--foreground))">Open QuickBooks Login</strong> below</li>
-            <li>A new tab opens — log into QuickBooks in the browser window</li>
-            <li>Once logged in, return here and click <strong style="color:hsl(var(--foreground))">Check Session Status</strong></li>
+          <div style="font-size:14px;font-weight:600;color:hsl(var(--foreground));margin-bottom:12px">How to Refresh</div>
+          <ol style="font-size:13px;color:hsl(var(--muted-foreground));margin:0;padding-left:20px;line-height:1.8">
+            <li style="margin-bottom:6px">Click <strong style="color:hsl(var(--foreground))">Open QuickBooks Login</strong> below — a new tab will open.</li>
+            <li style="margin-bottom:6px">When prompted, enter:<br>
+              <span style="display:inline-block;margin-top:4px;padding:6px 10px;background:hsl(var(--muted));border-radius:6px;font-family:monospace;font-size:12px;color:hsl(var(--foreground))">
+                Username: <strong>wilbanks</strong> &nbsp;|&nbsp; Password: <strong>WilbanksQB2026!</strong>
+              </span><br>
+              <span style="font-size:12px">Then click <strong style="color:hsl(var(--foreground))">Connect</strong>.</span>
+            </li>
+            <li style="margin-bottom:6px">A Chrome browser window will appear. Log into QuickBooks using the Wilbanks Company QB credentials.</li>
+            <li style="margin-bottom:6px">If QuickBooks asks for a verification code, check the business phone for a text and enter the code.</li>
+            <li style="margin-bottom:6px">Wait until you can see the <strong style="color:hsl(var(--foreground))">QuickBooks home page</strong> — do not close the tab early.</li>
+            <li style="margin-bottom:6px">Switch back to this tab and click <strong style="color:hsl(var(--foreground))">Check Session Status</strong> below.</li>
+            <li>The status should update to <strong style="color:#22c55e">Active</strong> and the sidebar will turn green.</li>
           </ol>
         </div>
 
