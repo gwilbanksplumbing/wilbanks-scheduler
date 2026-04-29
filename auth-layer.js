@@ -1913,9 +1913,8 @@
           <div style="font-size:14px;font-weight:600;color:hsl(var(--foreground));margin-bottom:8px">How to Refresh</div>
           <ol style="font-size:13px;color:hsl(var(--muted-foreground));margin:0;padding-left:20px;line-height:2">
             <li>Click <strong style="color:hsl(var(--foreground))">Open QuickBooks Login</strong> below</li>
-            <li>A new tab opens — log into QuickBooks normally</li>
-            <li>Once logged in, click <strong style="color:hsl(var(--foreground))">Capture Session</strong> on that page</li>
-            <li>Return here — the status will update to Active</li>
+            <li>A new tab opens — log into QuickBooks in the browser window</li>
+            <li>Once logged in, return here and click <strong style="color:hsl(var(--foreground))">Check Session Status</strong></li>
           </ol>
         </div>
 
@@ -1936,52 +1935,9 @@
     if (main) main.style.display = 'none';
     document.body.appendChild(page);
 
-    // Open QB Login button handler
+    // Open QB Login button handler — opens VPS browser session
     document.getElementById('wc-qb-open-btn').addEventListener('click', function() {
-      const btn = this;
-      btn.disabled = true;
-      btn.textContent = 'Opening...';
-      fetch(API + '/api/qb-session/start-capture', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
-      }).then(function(r) { return r.json(); }).then(function(d) {
-        if (d.capturePageUrl) {
-          window.open(d.capturePageUrl, '_blank');
-          btn.textContent = 'Waiting for capture...';
-          // Poll for completion
-          const pollCapture = setInterval(function() {
-            fetch(API + '/api/qb-session/poll', {
-              headers: { 'Authorization': 'Bearer ' + token }
-            }).then(function(r) { return r.json(); }).then(function(pd) {
-              if (pd.status === 'captured') {
-                clearInterval(pollCapture);
-                _qbSessionValid = true;
-                btn.disabled = false;
-                btn.textContent = 'Open QuickBooks Login';
-                const statusDiv = document.getElementById('wc-qb-page-status');
-                if (statusDiv) { statusDiv.style.color = '#22c55e'; statusDiv.textContent = 'Session captured successfully!'; }
-                injectQBLoginLink();
-                // Refresh the page to show updated status
-                setTimeout(function() { renderQBLoginPage(); }, 1500);
-              }
-            }).catch(function() {});
-          }, 3000);
-          // Stop polling after 5 minutes
-          setTimeout(function() {
-            clearInterval(pollCapture);
-            if (btn.textContent === 'Waiting for capture...') {
-              btn.disabled = false;
-              btn.textContent = 'Open QuickBooks Login';
-            }
-          }, 5 * 60 * 1000);
-        } else {
-          btn.disabled = false;
-          btn.textContent = 'Open QuickBooks Login';
-        }
-      }).catch(function() {
-        btn.disabled = false;
-        btn.textContent = 'Open QuickBooks Login';
-      });
+      window.open('http://138.197.76.170', '_blank');
     });
 
     // Check status button handler
