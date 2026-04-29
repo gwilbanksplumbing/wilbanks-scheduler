@@ -1965,7 +1965,7 @@
     page.innerHTML = `
       <div style="max-width:560px;width:100%;">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
-          <button onclick="document.getElementById('wc-qb-login-page')?.remove();(function(){var bd=document.querySelector('.fixed.inset-0.z-10');if(bd)bd.style.display='none';var mn=document.querySelector('.fixed.top-\\[57px\\]');if(mn)mn.style.display='none';})();window.location.hash='#/';" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid hsl(var(--border));background:hsl(var(--card));cursor:pointer;flex-shrink:0;" title="Back">
+          <button onclick="document.getElementById('wc-qb-login-page')?.remove();(function(){var bd=document.querySelector('.fixed.inset-0.z-10');if(bd)bd.style.display='none';var mn=document.querySelector('.fixed.top-\\[57px\\]');if(mn)mn.style.display='none';})();window.location.hash='#/dashboard';" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid hsl(var(--border));background:hsl(var(--card));cursor:pointer;flex-shrink:0;" title="Back">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--foreground))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
           </button>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--foreground))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
