@@ -1617,6 +1617,7 @@
       attempts++;
       tryInject();
       tryInjectMobileMenu();
+      injectQBLoginLink();
       injectRecordPaymentButtons();
       injectRecordPaymentDetailPage();
       if (attempts > 2000) observer.disconnect();
@@ -1755,13 +1756,41 @@
 
   function injectQBLoginLink() {
     if (!canUseQBLogin()) return;
-    const nav = document.querySelector('aside nav');
-    if (!nav) return;
     const hash = window.location.hash;
     const isActive = hash.includes('/qb-login');
     const color = _qbSessionValid === false ? '#ef4444' : _qbSessionValid === true ? '#22c55e' : 'hsl(var(--muted-foreground))';
     const dot = _qbSessionValid === false ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-left:auto;animation:wc-pulse 1.5s infinite"></span>'
       : _qbSessionValid === true ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-left:auto"></span>' : '';
+    const svgIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>';
+
+    // Mobile menu link — always inject regardless of sidebar presence
+    const mobileMenu = document.querySelector('.fixed.top-\\[57px\\]');
+    if (mobileMenu) {
+      let mobileLink = document.getElementById('wc-qb-login-mobile');
+      if (!mobileLink) {
+        const qbSection = document.createElement('div');
+        qbSection.id = 'wc-qb-login-mobile-section';
+        qbSection.style.cssText = 'border-top:1px solid hsl(var(--border));padding:4px 8px;';
+        const lbl = document.createElement('p');
+        lbl.textContent = 'Reports';
+        lbl.style.cssText = 'font-size:11px;font-weight:600;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;padding:6px 4px 2px;margin:0;';
+        qbSection.appendChild(lbl);
+        mobileLink = document.createElement('a');
+        mobileLink.id = 'wc-qb-login-mobile';
+        mobileLink.href = '#/qb-login';
+        mobileLink.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;transition:background 0.15s;margin-bottom:1px;';
+        mobileLink.addEventListener('click', function() { setTimeout(function() { mobileMenu.style.display = 'none'; }, 100); });
+        qbSection.appendChild(mobileLink);
+        const signOut = mobileMenu.querySelector('#wc-logout-mobile');
+        if (signOut) mobileMenu.insertBefore(qbSection, signOut);
+        else mobileMenu.appendChild(qbSection);
+      }
+      mobileLink.style.color = color;
+      mobileLink.innerHTML = svgIcon + '<span>QuickBooks Login</span>' + dot;
+    }
+
+    const nav = document.querySelector('aside nav');
+    if (!nav) return;
 
     if (!document.getElementById('wc-qb-login-link')) {
       const link = document.createElement('a');
@@ -1785,33 +1814,6 @@
       link.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>QuickBooks Login</span>' + dot;
     }
 
-    // Create or update mobile menu QB Login link (owned here so dot is always correct)
-    const mobileMenu = document.querySelector('.fixed.top-\\[57px\\]');
-    if (mobileMenu && canUseQBLogin()) {
-      let mobileLink = document.getElementById('wc-qb-login-mobile');
-      if (!mobileLink) {
-        // Create the section + link
-        const qbSection = document.createElement('div');
-        qbSection.id = 'wc-qb-login-mobile-section';
-        qbSection.style.cssText = 'border-top:1px solid hsl(var(--border));padding:4px 8px;';
-        const lbl = document.createElement('p');
-        lbl.textContent = 'Reports';
-        lbl.style.cssText = 'font-size:11px;font-weight:600;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;padding:6px 4px 2px;margin:0;';
-        qbSection.appendChild(lbl);
-        mobileLink = document.createElement('a');
-        mobileLink.id = 'wc-qb-login-mobile';
-        mobileLink.href = '#/qb-login';
-        mobileLink.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;transition:background 0.15s;margin-bottom:1px;';
-        mobileLink.addEventListener('click', function() { setTimeout(function() { mobileMenu.style.display = 'none'; }, 100); });
-        qbSection.appendChild(mobileLink);
-        // Insert before Sign Out
-        const signOut = mobileMenu.querySelector('#wc-logout-mobile');
-        if (signOut) mobileMenu.insertBefore(qbSection, signOut);
-        else mobileMenu.appendChild(qbSection);
-      }
-      mobileLink.style.color = color;
-      mobileLink.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>QuickBooks Login</span>' + dot;
-    }
 
     // Render QB Login page when hash matches
     window.addEventListener('hashchange', function() {
