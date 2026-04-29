@@ -1560,25 +1560,6 @@
         mobileMenu.appendChild(section);
       }
 
-      // Inject QuickBooks Login link for eligible users
-      if (canUseQBLogin() && !mobileMenu.querySelector('#wc-qb-login-mobile')) {
-        const qbSection = document.createElement('div');
-        qbSection.style.cssText = 'border-top:1px solid hsl(var(--border));padding:4px 8px;';
-        const label = document.createElement('p');
-        label.textContent = 'Reports';
-        label.style.cssText = 'font-size:11px;font-weight:600;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;padding:6px 4px 2px;margin:0;';
-        qbSection.appendChild(label);
-        const qbLink = document.createElement('a');
-        qbLink.id = 'wc-qb-login-mobile';
-        qbLink.href = '#/qb-login';
-        const isActive = window.location.hash.includes('/qb-login');
-        qbLink.style.cssText = `display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;color:${isActive ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'};background:${isActive ? 'hsl(var(--primary)/0.1)' : 'transparent'};transition:background 0.15s;margin-bottom:1px;`;
-        qbLink.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>QuickBooks Login</span>';
-        qbLink.addEventListener('click', () => { setTimeout(() => { mobileMenu.style.display = 'none'; }, 100); });
-        qbSection.appendChild(qbLink);
-        mobileMenu.appendChild(qbSection);
-      }
-
       // Inject Sign Out button
       if (!mobileMenu.querySelector('#wc-logout-mobile')) {
         const btn = buildSidebarBtn();
@@ -1804,9 +1785,30 @@
       link.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>QuickBooks Login</span>' + dot;
     }
 
-    // Also update mobile menu link with same dot + color
-    const mobileLink = document.getElementById('wc-qb-login-mobile');
-    if (mobileLink) {
+    // Create or update mobile menu QB Login link (owned here so dot is always correct)
+    const mobileMenu = document.querySelector('.fixed.top-\\[57px\\]');
+    if (mobileMenu && canUseQBLogin()) {
+      let mobileLink = document.getElementById('wc-qb-login-mobile');
+      if (!mobileLink) {
+        // Create the section + link
+        const qbSection = document.createElement('div');
+        qbSection.id = 'wc-qb-login-mobile-section';
+        qbSection.style.cssText = 'border-top:1px solid hsl(var(--border));padding:4px 8px;';
+        const lbl = document.createElement('p');
+        lbl.textContent = 'Reports';
+        lbl.style.cssText = 'font-size:11px;font-weight:600;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;padding:6px 4px 2px;margin:0;';
+        qbSection.appendChild(lbl);
+        mobileLink = document.createElement('a');
+        mobileLink.id = 'wc-qb-login-mobile';
+        mobileLink.href = '#/qb-login';
+        mobileLink.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;transition:background 0.15s;margin-bottom:1px;';
+        mobileLink.addEventListener('click', function() { setTimeout(function() { mobileMenu.style.display = 'none'; }, 100); });
+        qbSection.appendChild(mobileLink);
+        // Insert before Sign Out
+        const signOut = mobileMenu.querySelector('#wc-logout-mobile');
+        if (signOut) mobileMenu.insertBefore(qbSection, signOut);
+        else mobileMenu.appendChild(qbSection);
+      }
       mobileLink.style.color = color;
       mobileLink.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>QuickBooks Login</span>' + dot;
     }
