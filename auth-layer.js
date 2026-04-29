@@ -1907,7 +1907,8 @@
 
     const page = document.createElement('div');
     page.id = 'wc-qb-login-page';
-    page.style.cssText = 'position:fixed;top:0;left:256px;right:0;bottom:0;background:hsl(var(--background));overflow-y:auto;padding:32px;z-index:100;display:flex;flex-direction:column;align-items:center;';
+    const isMobile = window.innerWidth < 768;
+    page.style.cssText = `position:fixed;top:0;left:${isMobile ? '0' : '256px'};right:0;bottom:0;background:hsl(var(--background));overflow-y:auto;padding:${isMobile ? '16px' : '32px'};z-index:100;display:flex;flex-direction:column;align-items:center;`;
 
     const token = loadToken();
     const lastRefreshed = _qbLastRefreshed ? new Date(_qbLastRefreshed).toLocaleString() : 'Unknown';
