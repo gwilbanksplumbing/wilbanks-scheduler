@@ -1622,7 +1622,26 @@
       injectRecordPaymentDetailPage();
       if (attempts > 2000) observer.disconnect();
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+
+    // Also hook hamburger button clicks — React toggles display style, not DOM childList
+    function hookHamburgerBtn() {
+      const btns = document.querySelectorAll('button');
+      btns.forEach(btn => {
+        if (!btn.__wcHamburgerHooked && btn.classList.contains('md:hidden')) {
+          btn.__wcHamburgerHooked = true;
+          btn.addEventListener('click', function() {
+            setTimeout(function() {
+              tryInjectMobileMenu();
+              injectQBLoginLink();
+            }, 50);
+          });
+        }
+      });
+    }
+    hookHamburgerBtn();
+    setTimeout(hookHamburgerBtn, 2000);
+    setTimeout(hookHamburgerBtn, 5000);
 
 
   }
