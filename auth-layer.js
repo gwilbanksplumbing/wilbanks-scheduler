@@ -1622,26 +1622,18 @@
       injectRecordPaymentDetailPage();
       if (attempts > 2000) observer.disconnect();
     });
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+    observer.observe(document.body, { childList: true, subtree: true });
 
-    // Also hook hamburger button clicks — React toggles display style, not DOM childList
-    function hookHamburgerBtn() {
-      const btns = document.querySelectorAll('button');
-      btns.forEach(btn => {
-        if (!btn.__wcHamburgerHooked && btn.classList.contains('md:hidden')) {
-          btn.__wcHamburgerHooked = true;
-          btn.addEventListener('click', function() {
-            setTimeout(function() {
-              tryInjectMobileMenu();
-              injectQBLoginLink();
-            }, 50);
-          });
-        }
-      });
-    }
-    hookHamburgerBtn();
-    setTimeout(hookHamburgerBtn, 2000);
-    setTimeout(hookHamburgerBtn, 5000);
+    // Poll for mobile menu visibility and inject QB link + admin items when open
+    var _lastMenuChildCount = 0;
+    setInterval(function() {
+      var menu = document.querySelector('.fixed.top-\\[57px\\]');
+      if (!menu) return;
+      var visible = menu.offsetParent !== null || menu.offsetHeight > 0 || getComputedStyle(menu).display !== 'none';
+      if (!visible) return;
+      tryInjectMobileMenu();
+      injectQBLoginLink();
+    }, 300);
 
 
   }
