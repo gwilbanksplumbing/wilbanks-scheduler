@@ -1629,7 +1629,7 @@
     setInterval(function() {
       var menu = document.querySelector('.fixed.top-\\[57px\\]');
       if (!menu) return;
-      var visible = menu.offsetParent !== null || menu.offsetHeight > 0 || getComputedStyle(menu).display !== 'none';
+      var visible = menu.offsetHeight > 0 && getComputedStyle(menu).display !== 'none';
       if (!visible) return;
       tryInjectMobileMenu();
       injectQBLoginLink();
