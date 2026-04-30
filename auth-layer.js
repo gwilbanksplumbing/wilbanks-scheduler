@@ -1905,7 +1905,7 @@
     fetch(API + '/api/qb-session/status', {
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(r) { return r.json(); }).then(function(d) {
-      _qbSessionValid = !!d.valid;
+      _qbSessionValid = d.playwrightSessionValid !== undefined ? !!d.playwrightSessionValid : !!d.valid;
       injectQBLoginLink();
       showQBToast(_qbSessionValid);
     }).catch(function() { _qbSessionValid = null; });
@@ -1924,7 +1924,7 @@
         headers: { 'Authorization': 'Bearer ' + token }
       }).then(function(r) { return r.json(); }).then(function(d) {
         const wasValid = _qbSessionValid;
-        _qbSessionValid = !!d.valid;
+        _qbSessionValid = d.playwrightSessionValid !== undefined ? !!d.playwrightSessionValid : !!d.valid;
         injectQBLoginLink();
         // Show toast only if session just dropped (was valid, now expired)
         if (wasValid === true && _qbSessionValid === false) {
@@ -2035,7 +2035,7 @@
       fetch(API + '/api/qb-session/status', {
         headers: { 'Authorization': 'Bearer ' + token }
       }).then(function(r) { return r.json(); }).then(function(d) {
-        _qbSessionValid = !!d.valid;
+        _qbSessionValid = d.playwrightSessionValid !== undefined ? !!d.playwrightSessionValid : !!d.valid;
         _qbLastRefreshed = d.lastRefreshed;
         btn.disabled = false;
         btn.textContent = 'Check Session Status';
