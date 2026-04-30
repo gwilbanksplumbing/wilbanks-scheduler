@@ -708,14 +708,11 @@
     injectLogoutButton();
     // Admin Tools nav is handled by the React app natively
     // Inject Admin Tools nav directly - React renders before __WC_USER is set so we do it via DOM
-    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectQBLoginLink(); }, 300);
-    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectQBLoginLink(); }, 800);
-    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectQBLoginLink(); }, 1600);
+    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 300);
+    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 800);
+    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 1600);
     // Start inactivity timer
     startInactivityTimer();
-    // Check QB session on login and start background poll
-    checkQBSessionOnLogin();
-    startQBSessionPoll();
   }
 
   // ── Inactivity timeout ─────────────────────────────────────────────────────
@@ -1633,7 +1630,6 @@
       attempts++;
       tryInject();
       tryInjectMobileMenu();
-      injectQBLoginLink();
       injectRecordPaymentButtons();
       injectRecordPaymentDetailPage();
       if (attempts > 2000) observer.disconnect();
@@ -1648,7 +1644,6 @@
       var visible = menu.offsetHeight > 0 && getComputedStyle(menu).display !== 'none';
       if (!visible) return;
       tryInjectMobileMenu();
-      injectQBLoginLink();
     }, 300);
 
 
@@ -1704,14 +1699,11 @@
           syncFieldTechName(user);
           // Inject Admin Tools nav for admin role only
           // Run at multiple intervals to survive React re-renders from hash restoration
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectQBLoginLink(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 300);
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectQBLoginLink(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 800);
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectQBLoginLink(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 1600);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 300);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 800);
+          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 1600);
           // Start inactivity timer
           startInactivityTimer();
-          // Check QB session and start background poll
-          checkQBSessionOnLogin();
-          startQBSessionPoll();
           // Wait for React to mount then inject
           setTimeout(() => {
             injectLogoutButton();
@@ -1768,20 +1760,17 @@
   window.addEventListener('pagehide', _saveHash);
   window.addEventListener('beforeunload', _saveHash);
 
-  // ── QB Login Nav Link ──────────────────────────────────────────────────────
-  // Shows under Reports in sidebar. Green when session valid, red when expired.
-  // Visible only to users with qbSessionRefresh feature or admin/both roles.
-  var _qbSessionValid = null; // null=unknown, true=valid, false=expired
+  // ── QB Login Nav Link (removed per user request) ─────────────────────────
 
-  function canUseQBLogin() {
-    const u = currentUser;
-    if (!u) return false;
-    if (u.role === 'admin' || u.role === 'both') return true;
-    const feats = u.features || {};
-    return !!feats.qbSessionRefresh;
-  }
+  function canUseQBLogin() { return false; }
+  function injectQBLoginLink() { return; }
+  function showQBToast() { return; }
+  function checkQBSessionOnLogin() { return; }
+  function startQBSessionPoll() { return; }
+  function renderQBLoginPage() { return; }
 
-  function injectQBLoginLink() {
+  /* DEAD CODE BELOW — kept for reference, never executes */
+  function _injectQBLoginLink_unused() {
     if (!canUseQBLogin()) return;
     const hash = window.location.hash;
     const isActive = hash.includes('/qb-login');
@@ -2064,14 +2053,7 @@
 
   var _qbLastRefreshed = null;
 
-  // Re-render QB page on hashchange if needed
-  window.addEventListener('hashchange', function() {
-    if (window.location.hash === '#/qb-login' && canUseQBLogin()) {
-      setTimeout(renderQBLoginPage, 100);
-    }
-    // Update QB link active state
-    setTimeout(injectQBLoginLink, 50);
-  });
+  // QB Login page/nav removed per user request
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bootstrap);
