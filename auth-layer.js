@@ -1830,7 +1830,7 @@
       link.id = 'wc-qb-login-link';
       link.href = '#/qb-login';
       link.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;color:' + (isActive ? 'hsl(var(--primary-foreground))' : color) + ';background:' + (isActive ? 'hsl(var(--primary))' : 'transparent') + ';transition:background 0.15s;margin-bottom:2px;';
-      link.onmouseenter = function() { if (!link.dataset.active) { link.style.background = 'hsl(var(--muted))'; link.style.color = 'hsl(var(--foreground))'; } };
+      link.onmouseenter = function() { if (!link.dataset.active) { link.style.background = 'hsl(var(--muted))'; } };
       link.onmouseleave = function() { if (!link.dataset.active) { link.style.background = 'transparent'; link.style.color = color; } };
       if (isActive) link.dataset.active = '1';
       link.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>QuickBooks Login</span>' + dot;
