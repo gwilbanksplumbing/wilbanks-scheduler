@@ -2021,7 +2021,7 @@
 
     // Open QB Login button handler — opens VPS browser session
     document.getElementById('wc-qb-open-btn').addEventListener('click', function() {
-      window.open('http://138.197.76.170', '_blank');
+      window.open('http://138.197.76.170', '_blank', 'width=1280,height=900,resizable=yes,scrollbars=yes');
     });
 
     // Check status button handler
