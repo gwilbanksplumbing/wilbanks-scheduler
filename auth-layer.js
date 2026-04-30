@@ -1523,40 +1523,56 @@
       const mobileMenu = document.querySelector('.fixed.top-\\[57px\\]');
       if (!mobileMenu) return;
 
-      // Inject Admin Tools section for admin/both roles
+      // Inject collapsible Admin Tools section for admin/both roles
       const role = currentUser?.role;
-      if (role === 'admin' && !mobileMenu.querySelector('#wc-mobile-admin-section')) {
+      if (role === 'admin' || role === 'both') {
+        // Only rebuild if not already present — avoid clobbering open/close state
+        if (mobileMenu.querySelector('#wc-mobile-admin-section')) return;
+
         const hash = window.location.hash;
+        if (typeof window._wcAdminOpen === 'undefined') window._wcAdminOpen = false;
+        if (hash.includes('audit-log') || hash.includes('deleted-jobs') || hash.includes('/settings') || hash.includes('/users')) window._wcAdminOpen = true;
+        const open = window._wcAdminOpen;
+
         const section = document.createElement('div');
         section.id = 'wc-mobile-admin-section';
         section.style.cssText = 'border-top:1px solid hsl(var(--border));padding:4px 8px;';
 
-        const label = document.createElement('p');
-        label.textContent = 'Admin Tools';
-        label.style.cssText = 'font-size:11px;font-weight:600;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;padding:6px 4px 2px;margin:0;';
-        section.appendChild(label);
+        // Collapsible toggle header
+        const toggle = document.createElement('button');
+        toggle.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;padding:8px 12px;background:transparent;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;';
+        toggle.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg><span style="flex:1;font-size:11px">Admin Tools</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;transition:transform 0.2s;transform:rotate(${open ? 180 : 0}deg)" id="wc-mobile-admin-chevron"><polyline points="6 9 12 15 18 9"/></svg>`;
+
+        const sub = document.createElement('div');
+        sub.id = 'wc-mobile-admin-sub';
+        sub.style.cssText = `overflow:hidden;max-height:${open ? '300px' : '0'};transition:max-height 0.2s ease;`;
+
+        toggle.addEventListener('click', function() {
+          window._wcAdminOpen = !window._wcAdminOpen;
+          sub.style.maxHeight = window._wcAdminOpen ? '300px' : '0';
+          const chev = document.getElementById('wc-mobile-admin-chevron');
+          if (chev) chev.style.transform = `rotate(${window._wcAdminOpen ? 180 : 0}deg)`;
+        });
 
         const adminLinks = [
           { label: 'Settings', href: '#/settings', svg: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
-          { label: 'Users', href: '#/users', svg: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', adminOnly: true },
+          { label: 'Users', href: '#/users', svg: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
           { label: 'Audit Log', href: '#/audit-log', svg: '<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>' },
           { label: 'Deleted Jobs', href: '#/deleted-jobs', svg: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>' },
         ];
 
-        adminLinks.forEach(({ label: lbl, href, svg, adminOnly }) => {
-          if (adminOnly && role !== 'admin') return;
-          const active = hash === href || hash.startsWith(href.replace('#', '#'));
+        adminLinks.forEach(({ label: lbl, href, svg }) => {
+          const active = hash === href;
           const a = document.createElement('a');
           a.href = href;
-          a.style.cssText = `display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;color:${active ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'};background:${active ? 'hsl(var(--primary)/0.1)' : 'transparent'};transition:background 0.15s;margin-bottom:1px;`;
+          a.style.cssText = `display:flex;align-items:center;gap:10px;padding:8px 12px 8px 28px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;color:${active ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'};background:${active ? 'hsl(var(--primary)/0.1)' : 'transparent'};transition:background 0.15s;margin-bottom:1px;`;
           a.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">${svg}</svg><span>${lbl}</span>`;
-          a.addEventListener('click', () => {
-            // Close mobile menu after navigation
-            setTimeout(() => { mobileMenu.style.display = 'none'; }, 100);
-          });
-          section.appendChild(a);
+          a.addEventListener('click', () => { setTimeout(() => { mobileMenu.style.display = 'none'; }, 100); });
+          sub.appendChild(a);
         });
 
+        section.appendChild(toggle);
+        section.appendChild(sub);
         mobileMenu.appendChild(section);
       }
 
@@ -1617,11 +1633,23 @@
       attempts++;
       tryInject();
       tryInjectMobileMenu();
+      injectQBLoginLink();
       injectRecordPaymentButtons();
       injectRecordPaymentDetailPage();
       if (attempts > 2000) observer.disconnect();
     });
     observer.observe(document.body, { childList: true, subtree: true });
+
+    // Poll for mobile menu visibility and inject QB link + admin items when open
+    var _lastMenuChildCount = 0;
+    setInterval(function() {
+      var menu = document.querySelector('.fixed.top-\\[57px\\]');
+      if (!menu) return;
+      var visible = menu.offsetHeight > 0 && getComputedStyle(menu).display !== 'none';
+      if (!visible) return;
+      tryInjectMobileMenu();
+      injectQBLoginLink();
+    }, 300);
 
 
   }
@@ -1755,13 +1783,47 @@
 
   function injectQBLoginLink() {
     if (!canUseQBLogin()) return;
-    const nav = document.querySelector('aside nav');
-    if (!nav) return;
     const hash = window.location.hash;
     const isActive = hash.includes('/qb-login');
     const color = _qbSessionValid === false ? '#ef4444' : _qbSessionValid === true ? '#22c55e' : 'hsl(var(--muted-foreground))';
     const dot = _qbSessionValid === false ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-left:auto;animation:wc-pulse 1.5s infinite"></span>'
       : _qbSessionValid === true ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-left:auto"></span>' : '';
+    const svgIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>';
+
+    // Mobile menu link — always inject regardless of sidebar presence
+    const mobileMenu = document.querySelector('.fixed.top-\\[57px\\]');
+    if (mobileMenu) {
+      let mobileLink = document.getElementById('wc-qb-login-mobile');
+      if (!mobileLink) {
+        const qbSection = document.createElement('div');
+        qbSection.id = 'wc-qb-login-mobile-section';
+        qbSection.style.cssText = 'border-top:1px solid hsl(var(--border));padding:4px 8px;';
+        const lbl = document.createElement('p');
+        lbl.textContent = 'Reports';
+        lbl.style.cssText = 'font-size:11px;font-weight:600;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:0.05em;padding:6px 4px 2px;margin:0;';
+        qbSection.appendChild(lbl);
+        mobileLink = document.createElement('a');
+        mobileLink.id = 'wc-qb-login-mobile';
+        mobileLink.href = '#/qb-login';
+        mobileLink.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;transition:background 0.15s;margin-bottom:1px;';
+        mobileLink.addEventListener('click', function(e) {
+          // Close hamburger menu via React's own button before navigating
+          var xBtn = Array.from(document.querySelectorAll('.md\\:hidden button')).find(function(b) {
+            return Array.from(b.querySelectorAll('path')).some(function(p) { return (p.getAttribute('d') || '').includes('18 6 6 18'); });
+          });
+          if (xBtn) xBtn.click();
+        });
+        qbSection.appendChild(mobileLink);
+        const signOut = mobileMenu.querySelector('#wc-logout-mobile');
+        if (signOut) mobileMenu.insertBefore(qbSection, signOut);
+        else mobileMenu.appendChild(qbSection);
+      }
+      mobileLink.style.color = color;
+      mobileLink.innerHTML = svgIcon + '<span>QuickBooks Login</span>' + dot;
+    }
+
+    const nav = document.querySelector('aside nav');
+    if (!nav) return;
 
     if (!document.getElementById('wc-qb-login-link')) {
       const link = document.createElement('a');
@@ -1784,6 +1846,7 @@
       if (isActive) link.dataset.active = '1'; else delete link.dataset.active;
       link.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>QuickBooks Login</span>' + dot;
     }
+
 
     // Render QB Login page when hash matches
     window.addEventListener('hashchange', function() {
@@ -1842,7 +1905,7 @@
     fetch(API + '/api/qb-session/status', {
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(r) { return r.json(); }).then(function(d) {
-      _qbSessionValid = !!d.valid;
+      _qbSessionValid = d.playwrightSessionValid !== undefined ? !!d.playwrightSessionValid : !!d.valid;
       injectQBLoginLink();
       showQBToast(_qbSessionValid);
     }).catch(function() { _qbSessionValid = null; });
@@ -1861,7 +1924,7 @@
         headers: { 'Authorization': 'Bearer ' + token }
       }).then(function(r) { return r.json(); }).then(function(d) {
         const wasValid = _qbSessionValid;
-        _qbSessionValid = !!d.valid;
+        _qbSessionValid = d.playwrightSessionValid !== undefined ? !!d.playwrightSessionValid : !!d.valid;
         injectQBLoginLink();
         // Show toast only if session just dropped (was valid, now expired)
         if (wasValid === true && _qbSessionValid === false) {
@@ -1888,7 +1951,16 @@
 
     const page = document.createElement('div');
     page.id = 'wc-qb-login-page';
-    page.style.cssText = 'position:fixed;top:0;left:256px;right:0;bottom:0;background:hsl(var(--background));overflow-y:auto;padding:32px;z-index:100;display:flex;flex-direction:column;align-items:center;';
+    page.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:hsl(var(--background));overflow-y:auto;padding:16px;z-index:9999;display:flex;flex-direction:column;align-items:center;';
+    // Shift right of sidebar on desktop via JS after paint
+    requestAnimationFrame(function() {
+      const sidebar = document.querySelector('nav.fixed, aside.fixed, [class*="sidebar"]');
+      const sidebarWidth = sidebar ? sidebar.offsetWidth : (window.innerWidth >= 768 ? 256 : 0);
+      if (sidebarWidth > 0 && window.innerWidth >= 768) {
+        page.style.left = sidebarWidth + 'px';
+        page.style.padding = '32px';
+      }
+    });
 
     const token = loadToken();
     const lastRefreshed = _qbLastRefreshed ? new Date(_qbLastRefreshed).toLocaleString() : 'Unknown';
@@ -1899,6 +1971,9 @@
     page.innerHTML = `
       <div style="max-width:560px;width:100%;">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+          <button onclick="history.back();setTimeout(function(){var p=document.getElementById('wc-qb-login-page');if(p)p.remove();var bd=document.querySelector('.fixed.inset-0.z-10');if(bd)bd.style.display='none';},150);" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid hsl(var(--border));background:hsl(var(--card));cursor:pointer;flex-shrink:0;" title="Back">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--foreground))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+          </button>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--foreground))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
           <h1 style="font-size:22px;font-weight:700;color:hsl(var(--foreground));margin:0">QuickBooks Login</h1>
         </div>
@@ -1960,7 +2035,7 @@
       fetch(API + '/api/qb-session/status', {
         headers: { 'Authorization': 'Bearer ' + token }
       }).then(function(r) { return r.json(); }).then(function(d) {
-        _qbSessionValid = !!d.valid;
+        _qbSessionValid = d.playwrightSessionValid !== undefined ? !!d.playwrightSessionValid : !!d.valid;
         _qbLastRefreshed = d.lastRefreshed;
         btn.disabled = false;
         btn.textContent = 'Check Session Status';
