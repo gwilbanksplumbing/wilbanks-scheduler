@@ -1,5 +1,5 @@
 # Wilbanks Company — App Version Manifest
-**Last updated: 2026-04-30 (Thursday night session)**
+**Last updated: 2026-05-01 (Friday session)**
 
 ---
 
@@ -83,6 +83,25 @@ node --check /home/user/workspace/wilbanks-fieldtech/assets/index-Dd5Dm7kM-FINAL
 
 # 4. Push to GitHub (use standard push pattern with api_credentials=["github"])
 ```
+
+---
+
+## Live Dashboard — Current State (2026-05-01)
+
+| Property | Value |
+|---|---|
+| **Live bundle filename** | `index-CQw0lTCk-1777131866.js` |
+| **Byte size** | 1,754,207 bytes |
+| **MD5** | `b8a2340b8033a462dcbc902afb9ecea5` |
+| **Pushed** | 2026-05-01 |
+
+**Features added since STABLE-20260430:**
+- Commercial company name on all calendar tiles (`companyName` shown instead of `customerName` when `company_name` present — 4 locations patched)
+- Commercial customer collapsed card shows first `service_locations` entry (`_ezAddr`/`_ezSL` sentinels); residential keeps `last_job_address`; commercial with no service locations shows nothing
+
+**Pre-session backups (today):**
+- `index-CQw0lTCk-1777131866-PRE-ADDR-FIX-20260501.js` — 1,753,816 bytes, MD5 `5a8a65913fa5ba556290276a4fefd5ef` (before service address card fix)
+- `index-CQw0lTCk-1777131866-PRE-COMMERCIAL-CAL-20260501.js` — before commercial calendar name fix
 
 ---
 
