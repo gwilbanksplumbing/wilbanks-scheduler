@@ -861,7 +861,7 @@ function _ReportsPage(){
   var _months=_data?Object.keys((_data.revenueByMonth)||{}).sort():[];
   var _monthItems=_months.map(function(m){return{label:_monthLabel(m),value:_data.revenueByMonth[m]||0};});
   var _svcKeys=_data?Object.keys(_data.revenueByServiceType||{}):[]; 
-  var _svcSlices=_svcKeys.map(function(k2,i){return{label:k2,value:_data.revenueByServiceType[k2]||0,color:_COLORS[i%_COLORS.length]};});
+  var _svcSlices=_svcKeys.map(function(_sk,i){return{label:_sk,value:_data.revenueByServiceType[_sk]||0,color:_COLORS[i%_COLORS.length]};});
   var _techKeys=_data?Object.keys(_data.revenueByTech||{}):[]; 
   var _techItems=_techKeys.map(function(t){return{label:t,value:_data.revenueByTech[t]||0,sub:(_data.jobsByTech&&_data.jobsByTech[t]?_data.jobsByTech[t]+" job"+(_data.jobsByTech[t]!==1?"s":""):"")};});
   _techItems.sort(function(a,b){return b.value-a.value;});
