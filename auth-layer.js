@@ -48,24 +48,11 @@
     try { localStorage.removeItem(TOKEN_KEY); } catch {}
   }
 
-  // ── Startup guard: reject any hardcoded admin token ──────────────────────
-  // Decodes the stored JWT payload without a network call. If the token
-  // belongs to the 'admin' account it was almost certainly injected for
-  // debugging — clear it so real users are forced to log in as themselves.
-  (function purgeHardcodedAdminToken() {
-    try {
-      const raw = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
-      if (!raw) return;
-      const parts = raw.split('.');
-      if (parts.length !== 3) return;
-      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-      if (payload && payload.username === 'admin') {
-        console.warn('[auth] Cleared hardcoded admin token from storage — do not commit tokens to index.html');
-        try { localStorage.removeItem(TOKEN_KEY); } catch {}
-        try { sessionStorage.removeItem(TOKEN_KEY); } catch {}
-      }
-    } catch {}
-  })();
+  // ── Startup guard removed ──────────────────────────────────────────────────
+  // Previously purged any stored admin token on startup to prevent hardcoded
+  // dev tokens from persisting. The root cause (hardcoded token in index.html)
+  // has been fixed, so this guard is no longer needed and was causing real
+  // admin logins to be cleared on every hard refresh.
 
   // Expose token globally for React app to use
   Object.defineProperty(window, "__WC_TOKEN", {
