@@ -889,26 +889,28 @@ function _ReportsPage(){
     var total=paid+outstanding||1;
     var paidPct=Math.round((paid/total)*100);
     var outPct=100-paidPct;
-    var tipStyle={position:"absolute",top:-36,background:"hsl(var(--card))",border:"1px solid hsl(var(--border))",borderRadius:6,padding:"4px 10px",fontSize:12,fontWeight:600,color:"hsl(var(--foreground))",whiteSpace:"nowrap",pointerEvents:"none",boxShadow:"0 2px 8px rgba(0,0,0,0.18)",zIndex:10};
+    var tipStyle={position:"absolute",top:-34,background:"hsl(var(--card))",border:"1px solid hsl(var(--border))",borderRadius:6,padding:"4px 10px",fontSize:12,fontWeight:600,color:"hsl(var(--foreground))",whiteSpace:"nowrap",pointerEvents:"none",boxShadow:"0 2px 8px rgba(0,0,0,0.18)",zIndex:20};
     return d.jsxs("div",{style:{display:"flex",flexDirection:"column",gap:12},children:[
       d.jsxs("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:600},children:[
         d.jsxs("span",{style:{color:"#22c55e"},children:["Collected: ",_fmt(paid)]}),
         d.jsxs("span",{style:{color:"#ef4444"},children:["Outstanding: ",_fmt(outstanding)]})
       ]}),
-      d.jsx("div",{style:{position:"relative"},children:
-        d.jsx("div",{style:{height:24,background:"hsl(var(--muted))",borderRadius:12,overflow:"visible",position:"relative"},children:
+      d.jsxs("div",{style:{position:"relative",height:24,marginTop:4},children:[
+        d.jsx("div",{style:{position:"absolute",inset:0,background:"hsl(var(--muted))",borderRadius:12,overflow:"hidden"},children:
           d.jsxs(d.Fragment,{children:[
-            d.jsx("div",{style:{width:paidPct+"%",height:"100%",background:"#22c55e",borderRadius:12,transition:"width 0.5s ease",cursor:"pointer",opacity:_pv==="out"?0.6:1},
-              onMouseEnter:function(){_setPv("paid");},onMouseLeave:function(){_setPv(null);},children:
-              _pv==="paid"?d.jsx("div",{style:Object.assign({},tipStyle,{left:"50%",transform:"translateX(-50%)"}),children:"Collected: "+_fmt(paid)+" ("+paidPct+"%)"}):null
-            }),
-            outstanding>0?d.jsx("div",{style:{position:"absolute",right:0,top:0,width:outPct+"%",height:"100%",background:"#ef4444",borderRadius:12,opacity:_pv==="paid"?0.6:1,cursor:"pointer"},
-              onMouseEnter:function(){_setPv("out");},onMouseLeave:function(){_setPv(null);},children:
-              _pv==="out"?d.jsx("div",{style:Object.assign({},tipStyle,{right:0}),children:"Outstanding: "+_fmt(outstanding)+" ("+outPct+"%)"}):null
-            }):null
+            d.jsx("div",{style:{position:"absolute",left:0,top:0,width:paidPct+"%",height:"100%",background:"#22c55e",opacity:_pv==="out"?0.55:1,transition:"opacity 0.15s"}}),
+            outstanding>0?d.jsx("div",{style:{position:"absolute",right:0,top:0,width:outPct+"%",height:"100%",background:"#ef4444",opacity:_pv==="paid"?0.55:1,transition:"opacity 0.15s"}}):null
           ]})
-        })
-      }),
+        }),
+        d.jsx("div",{style:{position:"absolute",left:0,top:0,width:paidPct+"%",height:"100%",cursor:"pointer"},
+          onMouseEnter:function(){_setPv("paid");},onMouseLeave:function(){_setPv(null);},children:
+          _pv==="paid"?d.jsx("div",{style:Object.assign({},tipStyle,{left:"50%",transform:"translateX(-50%)"}),children:"Collected: "+_fmt(paid)+" ("+paidPct+"%)"}):null
+        }),
+        outstanding>0?d.jsx("div",{style:{position:"absolute",right:0,top:0,width:outPct+"%",height:"100%",cursor:"pointer"},
+          onMouseEnter:function(){_setPv("out");},onMouseLeave:function(){_setPv(null);},children:
+          _pv==="out"?d.jsx("div",{style:Object.assign({},tipStyle,{right:0}),children:"Outstanding: "+_fmt(outstanding)+" ("+outPct+"%)"}):null
+        }):null
+      ]}),
       d.jsxs("div",{style:{fontSize:12,color:"hsl(var(--muted-foreground))"},children:[paidPct,"% collected of total billed"]})
     ]});
   }
