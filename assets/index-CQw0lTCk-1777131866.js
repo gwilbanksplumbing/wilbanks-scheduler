@@ -750,43 +750,39 @@ function _ReportsPage(){
   // --- CHART HELPERS ---
   var _COLORS=["#3b82f6","#22c55e","#a855f7","#f59e0b","#ef4444","#06b6d4","#ec4899"];
   function _svgBar(items,opts){
-    // items: [{label,value}], opts:{width,height,color}
     var W=opts&&opts.width?opts.width:560;
-    var H=opts&&opts.height?opts.height:200;
-    var pad={top:10,right:16,bottom:36,left:72};
+    var H=opts&&opts.height?opts.height:220;
+    var pad={top:20,right:16,bottom:44,left:72};
     var chartW=W-pad.left-pad.right;
     var chartH=H-pad.top-pad.bottom;
     if(!items||items.length===0)return d.jsx("div",{style:{color:"hsl(var(--muted-foreground))",fontSize:13,padding:"32px 0",textAlign:"center"},children:"No data"});
-    var maxVal=Math.max.apply(null,items.map(function(i){return i.value||0;}));
+    var maxVal=Math.max.apply(null,items.map(function(it){return it.value||0;}));
     if(maxVal===0)maxVal=1;
-    var barW=Math.min(48,Math.floor(chartW/items.length)-8);
+    var barW=Math.min(52,Math.floor(chartW/items.length)-10);
     var gap=(chartW-barW*items.length)/(items.length+1);
     var color=opts&&opts.color?opts.color:"hsl(var(--primary))";
-    return d.jsx("svg",{width:"100%",viewBox:"0 0 "+W+" "+H,style:{overflow:"visible"},children:d.jsxs("g",{transform:"translate("+pad.left+","+pad.top+")",children:[
-      // gridlines
-      [0,0.25,0.5,0.75,1].map(function(pct,gi){
-        var y=chartH-(pct*chartH);
-        var val=maxVal*pct;
-        return d.jsxs("g",{key:gi},
-          [d.jsx("line",{x1:0,y1:y,x2:chartW,y2:y,stroke:"hsl(var(--border))",strokeWidth:1,strokeDasharray:pct===0?"none":"4 3"}),
-           d.jsx("text",{x:-6,y:y+4,textAnchor:"end",fontSize:10,fill:"hsl(var(--muted-foreground))"},
-             val>=1000?"$"+(val/1000).toFixed(0)+"k":"$"+val.toFixed(0))]
-        );
-      }),
-      // bars
-      items.map(function(item,idx){
-        var barH=Math.max(2,Math.round((item.value/maxVal)*chartH));
-        var x=gap+(barW+gap)*idx;
-        var y=chartH-barH;
-        var shortLabel=item.label.length>7?item.label.slice(0,6)+"~":item.label;
-        return d.jsxs("g",{key:idx},
-          [d.jsx("rect",{x:x,y:y,width:barW,height:barH,rx:4,fill:color}),
-           d.jsx("text",{x:x+barW/2,y:chartH+14,textAnchor:"middle",fontSize:10,fill:"hsl(var(--muted-foreground))"},shortLabel),
-           d.jsx("text",{x:x+barW/2,y:y-4,textAnchor:"middle",fontSize:10,fontWeight:600,fill:"hsl(var(--foreground))"},
-             item.value>=1000?"$"+(item.value/1000).toFixed(1)+"k":"$"+item.value)]
-        );
-      })
-    ]})});
+    var gridLines=[0,0.25,0.5,0.75,1].map(function(pct,gi){
+      var gy=Math.round(chartH-(pct*chartH));
+      var gval=maxVal*pct;
+      var glabel=gval>=1000?"$"+(gval/1000).toFixed(0)+"k":"$"+Math.round(gval);
+      return d.jsxs("g",{key:"g"+gi,children:[
+        d.jsx("line",{x1:0,y1:gy,x2:chartW,y2:gy,stroke:"hsl(var(--border))",strokeWidth:1,strokeDasharray:pct===0?"none":"4 3"}),
+        d.jsx("text",{x:-6,y:gy+4,textAnchor:"end",fontSize:11,fill:"hsl(var(--muted-foreground))",children:glabel})
+      ]});
+    });
+    var bars=items.map(function(item,idx){
+      var bH=Math.max(3,Math.round((item.value/maxVal)*chartH));
+      var bx=Math.round(gap+(barW+gap)*idx);
+      var by=chartH-bH;
+      var lbl=item.label.length>8?item.label.slice(0,7)+"~":item.label;
+      var valLbl=item.value>=1000?"$"+(item.value/1000).toFixed(1)+"k":"$"+item.value;
+      return d.jsxs("g",{key:"b"+idx,children:[
+        d.jsx("rect",{x:bx,y:by,width:barW,height:bH,rx:4,fill:color,opacity:0.9}),
+        d.jsx("text",{x:bx+barW/2,y:chartH+16,textAnchor:"middle",fontSize:11,fill:"hsl(var(--muted-foreground))",children:lbl}),
+        d.jsx("text",{x:bx+barW/2,y:by-5,textAnchor:"middle",fontSize:11,fontWeight:700,fill:"hsl(var(--foreground))",children:valLbl})
+      ]});
+    });
+    return d.jsx("svg",{width:"100%",viewBox:"0 0 "+W+" "+H,style:{overflow:"visible"},children:d.jsx("g",{transform:"translate("+pad.left+","+pad.top+")",children:d.jsxs(d.Fragment,{children:[gridLines,bars]})})});
   }
   function _svgPie(slices){
     // slices: [{label,value,color}]
