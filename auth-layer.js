@@ -1751,8 +1751,16 @@
           }
           return;
         }
-      } catch {}
-      // Token invalid/expired — clear it and show login
+      } catch {
+        // Network error (server cold start, offline, etc.) — token may still be valid.
+        // Don't clear it; show the app optimistically so a hard refresh doesn't log the user out.
+        if (root) root.style.display = "";
+        startInactivityTimer();
+        setTimeout(() => { injectLogoutButton(); }, 1500);
+        setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 800);
+        return;
+      }
+      // Token returned a non-2xx (401/403) — genuinely invalid, clear it
       clearToken();
     }
 
