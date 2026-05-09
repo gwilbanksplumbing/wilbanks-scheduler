@@ -856,6 +856,7 @@ function _ReportsPage(){
   function _svgHBar(items,opts){
     var hv=opts&&opts.hv!=null?opts.hv:null;
     var setHv=opts&&opts.setHv?opts.setHv:function(){};
+    var _fmtV=opts&&opts.numeric?_fmtN:_fmt;
     if(!items||items.length===0)return d.jsx("div",{style:{color:"hsl(var(--muted-foreground))",fontSize:13,padding:"32px 0",textAlign:"center"},children:"No data"});
     var maxVal=Math.max.apply(null,items.map(function(i){return i.value||0;}));
     if(maxVal===0)maxVal=1;
