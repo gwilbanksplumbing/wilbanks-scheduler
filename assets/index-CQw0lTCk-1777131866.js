@@ -927,7 +927,7 @@ function _ReportsPage(){
   // --- STYLES ---
   var _card={background:"hsl(var(--card))",border:"1px solid hsl(var(--border))",borderRadius:12,padding:"20px 24px",marginBottom:20};
   var _cardTitle={fontSize:14,fontWeight:700,color:"hsl(var(--foreground))",marginBottom:16,display:"flex",alignItems:"center",gap:8};
-  var _tabBtnBase={padding:"7px 16px",borderRadius:6,border:"none",cursor:"pointer",fontSize:13,fontWeight:500};
+  var _tabBtnBase={padding:"7px 16px",borderRadius:6,border:"none",cursor:"pointer",fontSize:13,fontWeight:500,flexShrink:0,whiteSpace:"nowrap"};
   var _tabActive=Object.assign({},_tabBtnBase,{background:"hsl(var(--primary))",color:"#fff"});
   var _tabInactive=Object.assign({},_tabBtnBase,{background:"transparent",color:"hsl(var(--muted-foreground))"});
   var _rangeBtnBase={padding:"5px 12px",borderRadius:5,border:"1px solid hsl(var(--border))",cursor:"pointer",fontSize:12,fontWeight:500};
@@ -956,7 +956,7 @@ function _ReportsPage(){
       ]}):null
     ]}),
     // --- TABS ---
-    d.jsxs("div",{style:{display:"flex",gap:4,marginBottom:20,background:"hsl(var(--muted))",borderRadius:8,padding:4},children:[
+    d.jsxs("div",{style:{display:"flex",gap:4,marginBottom:20,background:"hsl(var(--muted))",borderRadius:8,padding:4,overflowX:"auto",WebkitOverflowScrolling:"touch",flexWrap:"nowrap"},children:[
       d.jsx(_TabBtn,{id:"overview",label:"Overview"}),
       d.jsx(_TabBtn,{id:"revenue",label:"Revenue"}),
       d.jsx(_TabBtn,{id:"techs",label:"Technicians"}),
