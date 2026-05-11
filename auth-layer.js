@@ -714,9 +714,9 @@
     injectLogoutButton();
     // Admin Tools nav is handled by the React app natively
     // Inject Admin Tools nav directly - React renders before __WC_USER is set so we do it via DOM
-    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 300);
-    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 800);
-    setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); }, 1600);
+    setTimeout(function() { injectAdminToolsNav(); }, 300);
+    setTimeout(function() { injectAdminToolsNav(); }, 800);
+    setTimeout(function() { injectAdminToolsNav(); }, 1600);
     // Start inactivity timer
     startInactivityTimer();
   }
@@ -784,48 +784,6 @@
     } catch {}
   }
 
-  // ── Reports Nav Link (all roles) ────────────────────────────────────────────
-  function injectReportsLink() {
-    // Desktop sidebar
-    const nav = document.querySelector('aside nav');
-    if (nav && !document.getElementById('wc-reports-link')) {
-      const hash = window.location.hash;
-      const isActive = hash.includes('/reports');
-      const link = document.createElement('a');
-      link.id = 'wc-reports-link';
-      link.href = '#/reports';
-      link.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;color:' + (isActive ? 'hsl(var(--primary-foreground))' : 'hsl(var(--muted-foreground))') + ';background:' + (isActive ? 'hsl(var(--primary))' : 'transparent') + ';transition:background 0.15s;margin-bottom:2px;';
-      link.onmouseenter = function() { if (!link.dataset.active) { link.style.background = 'hsl(var(--muted))'; link.style.color = 'hsl(var(--foreground))'; } };
-      link.onmouseleave = function() { if (!link.dataset.active) { link.style.background = 'transparent'; link.style.color = 'hsl(var(--muted-foreground))'; } };
-      if (isActive) link.dataset.active = '1';
-      link.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Reports</span>';
-      nav.appendChild(link);
-    } else if (nav && document.getElementById('wc-reports-link')) {
-      // Update active state on navigation
-      const hash = window.location.hash;
-      const isActive = hash.includes('/reports');
-      const link = document.getElementById('wc-reports-link');
-      link.style.background = isActive ? 'hsl(var(--primary))' : 'transparent';
-      link.style.color = isActive ? 'hsl(var(--primary-foreground))' : 'hsl(var(--muted-foreground))';
-      if (isActive) link.dataset.active = '1'; else delete link.dataset.active;
-    }
-    // Mobile menu
-    const mobileMenu = document.querySelector('.fixed.top-\\[57px\\]');
-    if (mobileMenu && !mobileMenu.querySelector('#wc-reports-mobile-link')) {
-      const hash = window.location.hash;
-      const isActive = hash.includes('/reports');
-      const a = document.createElement('a');
-      a.id = 'wc-reports-mobile-link';
-      a.href = '#/reports';
-      a.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:14px;font-weight:500;font-family:inherit;text-decoration:none;color:' + (isActive ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))') + ';background:' + (isActive ? 'hsl(var(--primary)/0.1)' : 'transparent') + ';transition:background 0.15s;margin-bottom:1px;';
-      a.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Reports</span>';
-      a.addEventListener('click', function() { setTimeout(function() { mobileMenu.style.display = 'none'; }, 100); });
-      // Insert before the admin section if it exists, otherwise just append
-      const adminSection = mobileMenu.querySelector('#wc-mobile-admin-section');
-      if (adminSection) mobileMenu.insertBefore(a, adminSection);
-      else mobileMenu.appendChild(a);
-    }
-  }
 
   // ── User Management ────────────────────────────────────────────────────────
   function injectAdminToolsNav() {
@@ -968,7 +926,6 @@
       setTimeout(() => {
         document.getElementById('wc-admin-tools-group')?.remove();
         tryInjectDesktop();
-        injectReportsLink();
         injectRecordPaymentDetailPage();
       }, 300);
     });
@@ -1705,9 +1662,9 @@
           syncFieldTechName(user);
           // Inject Admin Tools nav for admin role only
           // Run at multiple intervals to survive React re-renders from hash restoration
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 300);
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 800);
-          setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 1600);
+          setTimeout(function() { injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 300);
+          setTimeout(function() { injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 800);
+          setTimeout(function() { injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 1600);
           // Start inactivity timer
           startInactivityTimer();
           // Wait for React to mount then inject
@@ -1744,7 +1701,7 @@
         if (root) root.style.display = "";
         startInactivityTimer();
         setTimeout(() => { injectLogoutButton(); }, 1500);
-        setTimeout(function() { injectReportsLink(); injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 800);
+        setTimeout(function() { injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 800);
         return;
       }
       // Token returned a non-2xx (401/403) — genuinely invalid, clear it
@@ -1838,9 +1795,7 @@
       if (isActive) link.dataset.active = '1';
       link.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>QuickBooks Login</span>' + dot;
       // Insert after Reports link if present, otherwise append
-      const reportsLink = document.getElementById('wc-reports-link');
-      if (reportsLink && reportsLink.nextSibling) nav.insertBefore(link, reportsLink.nextSibling);
-      else nav.appendChild(link);
+      nav.appendChild(link);
     } else {
       // Update existing link color and active state
       const link = document.getElementById('wc-qb-login-link');
