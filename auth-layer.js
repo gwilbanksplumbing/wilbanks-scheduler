@@ -1589,18 +1589,22 @@
     }
 
     tryInject();
-    let attempts = 0;
 
-    // Keep observer running permanently — re-wires logout btn after every React navigation
-    const observer = new MutationObserver(() => {
-      attempts++;
-      tryInject();
-      tryInjectMobileMenu();
-      injectRecordPaymentButtons();
-      injectRecordPaymentDetailPage();
-      if (attempts > 2000) observer.disconnect();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    // Guard: only register the MutationObserver once across all injectLogoutButton() calls
+    if (!window._wcMutObsAdded) {
+      window._wcMutObsAdded = true;
+      let attempts = 0;
+      // Keep observer running permanently — re-wires logout btn after every React navigation
+      const observer = new MutationObserver(() => {
+        attempts++;
+        tryInject();
+        tryInjectMobileMenu();
+        injectRecordPaymentButtons();
+        injectRecordPaymentDetailPage();
+        if (attempts > 2000) observer.disconnect();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
 
     // Poll for mobile menu visibility and inject QB link + admin items when open
     var _lastMenuChildCount = 0;
