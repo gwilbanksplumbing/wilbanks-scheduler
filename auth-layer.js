@@ -1323,12 +1323,14 @@
 
     // Guard: already injected? (covers re-nav away and back)
     if (document.querySelector('[data-wc-rp-detail-id="' + id + '"]')) return;
-    // Synchronous lock — prevents double-injection during async fetch (set AFTER early returns)
+    // Synchronous lock — set BEFORE the async fetch to prevent MutationObserver from
+    // firing concurrent calls while the fetch is in-flight (race condition fix)
     if (_wcDetailInjectLock[id]) return;
+    _wcDetailInjectLock[id] = true;
 
     // Need the space-y-4 container to be present (page has loaded)
     const container = document.querySelector('.space-y-4');
-    if (!container) return;
+    if (!container) { _wcDetailInjectLock[id] = false; return; }
 
     // Need at least the Tech Notes h2 to be present before we inject
     var hasDetail = false;
@@ -1337,24 +1339,21 @@
       if (h2s[j].textContent && h2s[j].textContent.trim() === 'Tech Notes') { hasDetail = true; break; }
       if (h2s[j].textContent && h2s[j].textContent.trim() === 'Customer') { hasDetail = true; break; }
     }
-    if (!hasDetail) return;
+    if (!hasDetail) { _wcDetailInjectLock[id] = false; return; }
 
     // Fetch this specific appointment directly (list endpoint excludes completed jobs)
     var appt = null;
     try {
       var tok = loadToken();
-      if (!tok) return;
+      if (!tok) { _wcDetailInjectLock[id] = false; return; }
       var apptRes = await _origFetch(API + '/api/appointments/' + id, {
         headers: { 'Authorization': 'Bearer ' + tok }
       });
-      if (!apptRes.ok) return;
+      if (!apptRes.ok) { _wcDetailInjectLock[id] = false; return; }
       appt = await apptRes.json();
-    } catch(e) { return; }
-    if (!appt) return;
-    if ((appt.invoiceStatus !== 'sent' && appt.invoiceStatus !== 'paid') || !appt.qbInvoiceId) return;
-
-    // Set lock here — all early-return checks have passed
-    _wcDetailInjectLock[id] = true;
+    } catch(e) { _wcDetailInjectLock[id] = false; return; }
+    if (!appt) { _wcDetailInjectLock[id] = false; return; }
+    if ((appt.invoiceStatus !== 'sent' && appt.invoiceStatus !== 'paid') || !appt.qbInvoiceId) { _wcDetailInjectLock[id] = false; return; }
 
     // Build a full invoice card matching the other cards on the detail page
     var card = document.createElement('div');
