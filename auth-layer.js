@@ -920,15 +920,19 @@
     }
 
     // Re-inject on navigation (React wipes injected DOM on route changes)
-    window.addEventListener('hashchange', () => {
-      // Clear detail injection lock on navigation so re-visiting works
-      _wcDetailInjectLock = {};
-      setTimeout(() => {
-        document.getElementById('wc-admin-tools-group')?.remove();
-        tryInjectDesktop();
-        injectRecordPaymentDetailPage();
-      }, 300);
-    });
+    // Guard: only register this listener once even if injectAdminToolsNav is called multiple times
+    if (!window._wcNavHashListenerAdded) {
+      window._wcNavHashListenerAdded = true;
+      window.addEventListener('hashchange', () => {
+        // Clear detail injection lock on navigation so re-visiting works
+        _wcDetailInjectLock = {};
+        setTimeout(() => {
+          document.getElementById('wc-admin-tools-group')?.remove();
+          tryInjectDesktop();
+          injectRecordPaymentDetailPage();
+        }, 300);
+      });
+    }
 
     // Watch for React wiping the nav (e.g. on refresh) and re-inject immediately
     const _wcNavObserver = new MutationObserver(function() {
