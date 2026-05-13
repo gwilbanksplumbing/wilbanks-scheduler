@@ -1334,7 +1334,11 @@
 
     // Need the space-y-4 container to be present (page has loaded)
     const container = document.querySelector('.space-y-4');
-    if (!container) { _wcDetailInjectLock[id] = false; return; }
+    if (!container) {
+      // DOM not ready yet — release lock and let MO retry naturally
+      _wcDetailInjectLock[id] = false;
+      return;
+    }
 
     // Need at least the Tech Notes h2 to be present before we inject
     var hasDetail = false;
@@ -1343,7 +1347,11 @@
       if (h2s[j].textContent && h2s[j].textContent.trim() === 'Tech Notes') { hasDetail = true; break; }
       if (h2s[j].textContent && h2s[j].textContent.trim() === 'Customer') { hasDetail = true; break; }
     }
-    if (!hasDetail) { _wcDetailInjectLock[id] = false; return; }
+    if (!hasDetail) {
+      // DOM not fully rendered yet — hold the lock and retry in 200ms
+      setTimeout(function() { _wcDetailInjectLock[id] = false; injectRecordPaymentDetailPage(); }, 200);
+      return;
+    }
 
     // Fetch this specific appointment directly (list endpoint excludes completed jobs)
     var appt = null;
