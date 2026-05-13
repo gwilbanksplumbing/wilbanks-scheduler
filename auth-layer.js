@@ -923,9 +923,16 @@
     // Guard: only register this listener once even if injectAdminToolsNav is called multiple times
     if (!window._wcNavHashListenerAdded) {
       window._wcNavHashListenerAdded = true;
-      window.addEventListener('hashchange', () => {
-        // Clear detail injection lock on navigation so re-visiting works
-        _wcDetailInjectLock = {};
+      window.addEventListener('hashchange', (e) => {
+        // Clear detail injection lock only when navigating AWAY from an appointment page.
+        // If navigating TO #/appointment/id, do NOT reset — a concurrent MO call may have
+        // already set the lock and we must not race-reset it before the 300ms callback fires.
+        var prevHash = (e && e.oldURL ? e.oldURL.split('#')[1] : '') || '';
+        var prevMatch = prevHash.match(/^\/appointment\/(\d+)/);
+        if (prevMatch) {
+          // Only clear the lock for the appointment we just left
+          delete _wcDetailInjectLock[parseInt(prevMatch[1])];
+        }
         setTimeout(() => {
           document.getElementById('wc-admin-tools-group')?.remove();
           tryInjectDesktop();
