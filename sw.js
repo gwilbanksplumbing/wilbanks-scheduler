@@ -1,4 +1,63 @@
-// Wilbanks Company — Push Notification Service Worker
+// Wilbanks Company — Service Worker (Push + Cache Busting)
+// Merged: prod push-notification SW (badge counts, push events) + preview's
+// wc-vNNN cache-busting block so prod can force-refresh client bundles on
+// each deploy without losing push.
+
+// ─────────────────────────────────────────────────────────────────────────
+// Cache version — bump on every prod deploy to force clients to fetch the
+// new index.html / bundle. On activate, all caches except this one are
+// deleted, and the SW immediately claims all open clients.
+// ─────────────────────────────────────────────────────────────────────────
+const CACHE = "wc-v127";
+const OFFLINE = [
+  "/wilbanks-scheduler/",
+  "/wilbanks-scheduler/index.html",
+];
+
+self.addEventListener("install", (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(OFFLINE)));
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          // Keep the badge cache; only purge old wc-vNNN snapshots.
+          .filter((k) => k !== CACHE && k !== "wilbanks-badge")
+          .map((k) => caches.delete(k))
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", (e) => {
+  // Don't intercept API or upload requests — these must always hit the network
+  // for fresh data / auth-aware responses.
+  if (e.request.url.includes("/api/") || e.request.url.includes("/uploads/")) return;
+  // Only handle GET — POST/PUT/PATCH/DELETE must go straight to the network.
+  if (e.request.method !== "GET") return;
+  e.respondWith(
+    fetch(e.request)
+      .then((res) => {
+        // Stash a copy in the cache for offline fallback. Clone before
+        // returning because the original body can only be read once.
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => {
+          try { c.put(e.request, copy); } catch {}
+        });
+        return res;
+      })
+      .catch(() => caches.match(e.request))
+  );
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Push notifications (unchanged from prod). Keeps badge count + tap-to-focus
+// behavior on desktop and iPhone PWAs.
+// ─────────────────────────────────────────────────────────────────────────
 const BADGE_KEY = "wilbanks_badge_count";
 
 async function getBadgeCount() {
