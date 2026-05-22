@@ -17,7 +17,7 @@
   // sessions aren't affected — this only fires on a fresh page load, after the
   // SW serves the new bundle. Designed for the May 22 2026 cutover so anyone
   // returning to the app after 6 PM CDT lands on a clean login + fresh build.
-  const BUILD_VERSION = "wc-v127";
+  const BUILD_VERSION = "wc-v128";
   try {
     const prev = localStorage.getItem("wc_build_version");
     if (prev !== BUILD_VERSION) {
