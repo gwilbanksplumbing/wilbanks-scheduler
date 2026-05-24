@@ -406,7 +406,7 @@
 
     const overlay = showOverlay(`
       <div class="wc-logo">
-        <img src="./assets/logo-DmC-dsba-1776603623711-DmC-dsba.jpg" onerror="this.src='./assets/logo-DmC-dsba.jpg'" alt="Wilbanks" />
+        <img src="./assets/logo-DmC-dsba-1776655699849.jpg" onerror="this.onerror=null;this.src='./assets/logo-DmC-dsba.jpg'" alt="Wilbanks" />
         <div class="wc-logo-text">
           <h1>Wilbanks Company</h1>
           <p>Cooling &bull; Heating &bull; Plumbing</p>
@@ -521,7 +521,7 @@
   function renderChangePassword() {
     const overlay = showOverlay(`
       <div class="wc-logo">
-        <img src="./assets/logo-DmC-dsba-1776603623711-DmC-dsba.jpg" onerror="this.src='./assets/logo-DmC-dsba.jpg'" alt="Wilbanks" />
+        <img src="./assets/logo-DmC-dsba-1776655699849.jpg" onerror="this.onerror=null;this.src='./assets/logo-DmC-dsba.jpg'" alt="Wilbanks" />
         <div class="wc-logo-text">
           <h1>Wilbanks Company</h1>
           <p>Cooling &bull; Heating &bull; Plumbing</p>
