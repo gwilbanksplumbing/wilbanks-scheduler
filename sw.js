@@ -8,7 +8,7 @@
 // new index.html / bundle. On activate, all caches except this one are
 // deleted, and the SW immediately claims all open clients.
 // ─────────────────────────────────────────────────────────────────────────
-const CACHE = "wc-v132";
+const CACHE = "wc-v133";
 const OFFLINE = [
   "/wilbanks-scheduler/",
   "/wilbanks-scheduler/index.html",
