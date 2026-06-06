@@ -1,5 +1,5 @@
-// cache-bust: 20260605-225349 wc-v158 prod-promote-hvac-edit-undo-batch
-const CACHE = "wc-v158";
+// cache-bust: 20260606-2106 wc-v159 prod-promote-qb-reconcile-sync
+const CACHE = "wc-v159";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
