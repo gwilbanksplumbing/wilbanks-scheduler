@@ -1,5 +1,5 @@
-// cache-bust: 20260606-2106 wc-v176 prod-promote-qb-reconcile-sync
-const CACHE = "wc-v176";
+// cache-bust: 20260606-2106 wc-v178 prod-promote-qb-reconcile-sync
+const CACHE = "wc-v178";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
