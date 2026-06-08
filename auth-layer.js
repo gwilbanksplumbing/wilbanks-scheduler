@@ -16,7 +16,7 @@
   // token so the next app load lands on the login screen. Active in-flight
   // sessions aren't affected — this only fires on a fresh page load, after the
   // SW serves the new bundle. (Prod-only safety mechanism; not present on staging.)
-  const BUILD_VERSION = "wc-v208";
+  const BUILD_VERSION = "wc-v212";
   try {
     const prev = localStorage.getItem("wc_build_version");
     if (prev !== BUILD_VERSION) {
