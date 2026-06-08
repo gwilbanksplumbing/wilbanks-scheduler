@@ -1,5 +1,5 @@
-// cache-bust: 20260607-2212 wc-v212 prod-promote-admintools-flyout-techbar-removal
-const CACHE = "wc-v212";
+// cache-bust: 20260607-2212 wc-v216 prod-promote-admintools-flyout-techbar-removal
+const CACHE = "wc-v216";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
