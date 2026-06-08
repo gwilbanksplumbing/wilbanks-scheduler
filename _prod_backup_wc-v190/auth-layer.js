@@ -15,8 +15,9 @@
   // localStorage has a stale (or missing) wc_build_version, we purge their auth
   // token so the next app load lands on the login screen. Active in-flight
   // sessions aren't affected — this only fires on a fresh page load, after the
-  // SW serves the new bundle. (Prod-only safety mechanism; not present on staging.)
-  const BUILD_VERSION = "wc-v208";
+  // SW serves the new bundle. Designed for the May 22 2026 cutover so anyone
+  // returning to the app after 6 PM CDT lands on a clean login + fresh build.
+  const BUILD_VERSION = "wc-v190";
   try {
     const prev = localStorage.getItem("wc_build_version");
     if (prev !== BUILD_VERSION) {
@@ -96,18 +97,6 @@
 
   // ── Auth state ─────────────────────────────────────────────────────────────
   let currentUser = null;
-
-  // wc-v205: expose the logged-in role to the React app so Settings can gate the
-  // admin-only "Admin Tools" tab. Persist to localStorage (synchronous read on
-  // mount) and dispatch an event (live update if role resolves after mount).
-  function publishUserRole(u) {
-    try {
-      var r = (u && u.role) ? String(u.role) : '';
-      if (r) localStorage.setItem('wc_user_role', r);
-      else localStorage.removeItem('wc_user_role');
-      window.dispatchEvent(new CustomEvent('wc:user-role', { detail: r }));
-    } catch (e) {}
-  }
 
   function getSavedUsername() {
     try { return localStorage.getItem(USERNAME_KEY) || ""; } catch { return ""; }
@@ -395,9 +384,6 @@
     // Unhide root
     const root = document.getElementById("root");
     if (root) root.style.display = "";
-    // Signal React app that auth is complete so it re-fires all queries
-    window.__WC_AUTH_READY = true;
-    try { window.dispatchEvent(new CustomEvent("wc:auth-ready")); } catch {}
   }
 
   // ── Login screen ──────────────────────────────────────────────────────────
@@ -420,7 +406,7 @@
 
     const overlay = showOverlay(`
       <div class="wc-logo">
-        <img src="./assets/logo-DmC-dsba.jpg" alt="Wilbanks" />
+        <img src="./assets/logo-DmC-dsba-1776655699849.jpg" onerror="this.onerror=null;this.src='./assets/logo-DmC-dsba.jpg'" alt="Wilbanks" />
         <div class="wc-logo-text">
           <h1>Wilbanks Company</h1>
           <p>Cooling &bull; Heating &bull; Plumbing</p>
@@ -535,7 +521,7 @@
   function renderChangePassword() {
     const overlay = showOverlay(`
       <div class="wc-logo">
-        <img src="./assets/logo-DmC-dsba.jpg" alt="Wilbanks" />
+        <img src="./assets/logo-DmC-dsba-1776655699849.jpg" onerror="this.onerror=null;this.src='./assets/logo-DmC-dsba.jpg'" alt="Wilbanks" />
         <div class="wc-logo-text">
           <h1>Wilbanks Company</h1>
           <p>Cooling &bull; Heating &bull; Plumbing</p>
@@ -660,7 +646,6 @@
     saveToken(token);
     currentUser = user;
     window.__WC_USER = user;
-    publishUserRole(user);
 
     // Determine which app we're on
     const isDashboard = !window.location.pathname.includes('fieldtech') &&
@@ -723,38 +708,53 @@
   }
 
   function launchApp() {
-    dismissOverlay();
-    window.__WC_USER = currentUser;
-    publishUserRole(currentUser);
-    window.__WC_LOGOUT = logout;
-    // Restore the hash route from before the refresh
+    // Root-cause fix (replaces v65 post-login reload workaround).
+    //
+    // BEFORE (v65 .. v75): we did window.location.reload() here because React
+    // Query had fired initial fetches against /api/appointments (and friends)
+    // BEFORE the token existed, those fetches got 401'd and were cached as
+    // errors in JS memory (retry:1, staleTime:30s, refetchOnWindowFocus:false).
+    // A full reload was the blunt-instrument fix.
+    //
+    // NOW: React's <AuthReadyInvalidator /> in App.tsx listens for
+    // 'wc:auth-ready' and calls queryClient.invalidateQueries(), which clears
+    // any cached 401 errors and refetches every query with the now-present
+    // Bearer token. No reload needed. We also set a global flag so the React
+    // component can detect auth-ready if it mounted AFTER this dispatch.
+    //
+    // CRITICAL: tear down the auth overlay (login form, Face ID prompt, etc.)
+    // and unhide the React root. The old reload-based flow did this implicitly
+    // by refreshing the page; the new flow must do it explicitly or the user
+    // sees the overlay frozen on screen with the app invisible behind it.
+    try { dismissOverlay(); } catch {}
     try {
-      const savedHash = sessionStorage.getItem('wc_last_hash');
-      if (savedHash && savedHash !== '#/' && savedHash !== '#') {
-        sessionStorage.removeItem('wc_last_hash');
-        // Try immediately, then retry after React has mounted — wouter picks up
-        // window.location.hash changes via its own popstate/hashchange listeners
-        const _applyHash = () => {
-          try { window.location.hash = savedHash.replace(/^#/, ''); } catch {}
-        };
-        _applyHash();
-        setTimeout(_applyHash, 150);
-        setTimeout(_applyHash, 500);
-      }
+      const root = document.getElementById('root');
+      if (root) root.style.display = '';
     } catch {}
-    // Sync display name into the field tech app's localStorage key
-    // so the top-left header always shows the logged-in user's name
-    syncFieldTechName(currentUser);
-    // Inject the sidebar Sign Out button + Admin Tools nav after a FRESH login.
-    // The React app does NOT render these natively, so they must be injected
-    // here just like bootstrap() does for a token-already-present page load.
-    // Multiple intervals survive React re-renders during initial mount.
-    setTimeout(function() { injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 300);
-    setTimeout(function() { injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 800);
-    setTimeout(function() { injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 1600);
-    setTimeout(function() { injectLogoutButton(); }, 1500);
-    // Start inactivity timer
-    startInactivityTimer();
+    // Set sticky flag for components that mount after this event fires.
+    try { window.__WC_AUTH_READY = true; } catch {}
+    try {
+      window.dispatchEvent(new CustomEvent('wc:auth-ready', {
+        detail: { user: window.__WC_USER || null, at: Date.now() }
+      }));
+    } catch (e) {
+      // If dispatch fails for any reason, fall back to the old reload behavior
+      // so the user never gets stuck on an empty calendar.
+      console.warn('[auth-layer] wc:auth-ready dispatch failed, falling back to reload', e);
+      window.location.reload();
+      return;
+    }
+    // The pre-v76 reload caused bootstrap() to re-run AFTER auth, which is what
+    // wired up Admin Tools nav, Record Payment buttons, Logout button, and the
+    // inactivity timer. Without reload, we must invoke them here. These match
+    // the calls in bootstrap()'s post-token-validation block.
+    try {
+      setTimeout(function() { try { injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); } catch {} }, 300);
+      setTimeout(function() { try { injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); } catch {} }, 800);
+      setTimeout(function() { try { injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); } catch {} }, 1600);
+      try { startInactivityTimer(); } catch {}
+      setTimeout(function() { try { injectLogoutButton(); } catch {} }, 1500);
+    } catch {}
   }
 
   // ── Inactivity timeout ─────────────────────────────────────────────────────
@@ -823,13 +823,6 @@
 
   // ── User Management ────────────────────────────────────────────────────────
   function injectAdminToolsNav() {
-    // wc-v203: Admin Tools folder retired from the left sidebar. All four items
-    // (Settings, Users & Roles, Audit Log, Deleted Jobs) now live as tabs inside
-    // the React Settings page. Also clean up any previously-injected group that a
-    // stale cached build may have left in the DOM.
-    document.getElementById('wc-admin-tools-group')?.remove();
-    return;
-    /* eslint-disable no-unreachable */
     const role = currentUser?.role;
     if (role !== 'admin') return;
     const isAdmin = true;
@@ -1493,30 +1486,28 @@
   function injectLogoutButton() {
     document.getElementById('wc-logout-btn')?.remove();
 
-    // Build a sidebar-style logout button (dashboard desktop).
-    // wc-v204: compact rail style — icon stacked above a small label — to match
-    // the 104px icon rail (Dashboard/Techs/Settings/etc.).
+    // Build a sidebar-style logout button (dashboard desktop)
     function buildSidebarBtn() {
       const btn = document.createElement('button');
       btn.id = 'wc-logout-btn';
-      btn.title = 'Sign Out';
       btn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
           <polyline points="16,17 21,12 16,7"/>
           <line x1="21" y1="12" x2="9" y2="12"/>
         </svg>
-        <span style="line-height:1.1;text-align:center">Sign Out</span>
+        Sign Out
       `;
       Object.assign(btn.style, {
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
-        width: '100%', padding: '4px',
+        display: 'flex', alignItems: 'center', gap: '12px',
+        width: '100%', padding: '6px 12px',
         background: 'transparent', border: 'none',
-        borderRadius: '8px', cursor: 'pointer',
-        fontSize: '10px', fontWeight: '600',
+        borderRadius: '6px', cursor: 'pointer',
+        fontSize: '14px', fontWeight: '500',
         color: '#ef4444',
         fontFamily: 'inherit',
         transition: 'background 0.15s',
+        marginTop: '2px',
       });
       btn.addEventListener('mouseenter', () => btn.style.background = 'rgba(239,68,68,0.1)');
       btn.addEventListener('mouseleave', () => btn.style.background = 'transparent');
@@ -1530,17 +1521,11 @@
       if (confirm('Sign out of Wilbanks Company?')) logout();
     }
 
-    // Strategy 1a: Dashboard desktop sidebar — inject into the dedicated
-    // #wc-sidebar-footer slot the React rail renders at the bottom of <nav>.
-    // wc-v204: the old anchor ([data-testid="button-toggle-theme"]) was removed
-    // from the rail in v197 (theme moved into Settings), which silently dropped
-    // the desktop Sign Out button. Anchor to the footer slot instead.
+    // Strategy 1a: Dashboard desktop sidebar — inject below theme toggle
     function tryInjectSidebar() {
-      const footer = document.getElementById('wc-sidebar-footer');
-      if (footer) {
-        if (!footer.querySelector('#wc-logout-btn')) {
-          footer.appendChild(buildSidebarBtn());
-        }
+      const themeBtn = document.querySelector('[data-testid="button-toggle-theme"]');
+      if (themeBtn && !document.getElementById('wc-logout-btn')) {
+        themeBtn.parentElement?.appendChild(buildSidebarBtn());
         return true;
       }
       return false;
@@ -1548,21 +1533,19 @@
 
     // Strategy 1b: Dashboard mobile menu — inject Admin Tools + Sign Out
     function tryInjectMobileMenu() {
-      // The mobile dropdown has class 'md:hidden fixed top-[57px]'.
-      // IMPORTANT: require `.md:hidden` so we never match the AI full-page
-      // results overlay, which also uses `fixed top-[57px]` (but is NOT
-      // md:hidden — it's z-[90] md:top-0 md:left-64). Matching the overlay
-      // injected Admin Tools + Sign Out into the AI results panel, leaking
-      // them above the AI bar on mobile.
-      const mobileMenu = document.querySelector('.md\\:hidden.fixed.top-\\[57px\\]');
+      // The mobile dropdown is tagged data-testid="mobile-nav-dropdown" in
+      // Sidebar.tsx. We MUST target it by that attribute, not by
+      // '.fixed.top-[57px]', because the AskAiBar's FullPageResults overlay
+      // also uses 'fixed top-[57px]' to sit below the mobile header — and
+      // the class-selector match was causing Admin Tools + Sign Out to get
+      // injected into the bottom of every AI answer view on both iPhone
+      // and desktop. (Bug surfaced 2026-05-20 on the duplicates AI answer.)
+      const mobileMenu = document.querySelector('[data-testid="mobile-nav-dropdown"]');
       if (!mobileMenu) return;
 
-      // wc-v203: mobile Admin Tools section retired — items now live as Settings tabs.
-      // Clean up any stale injected section, then skip rebuilding it.
-      mobileMenu.querySelector('#wc-mobile-admin-section')?.remove();
       // Inject collapsible Admin Tools section for admin/both roles
       const role = currentUser?.role;
-      if (false && (role === 'admin' || role === 'both')) {
+      if (role === 'admin' || role === 'both') {
         // Only rebuild if not already present — avoid clobbering open/close state
         if (mobileMenu.querySelector('#wc-mobile-admin-section')) return;
 
@@ -1683,7 +1666,7 @@
     // Poll for mobile menu visibility and inject QB link + admin items when open
     var _lastMenuChildCount = 0;
     setInterval(function() {
-      var menu = document.querySelector('.md\\:hidden.fixed.top-\\[57px\\]');
+      var menu = document.querySelector('[data-testid="mobile-nav-dropdown"]');
       if (!menu) return;
       var visible = menu.offsetHeight > 0 && getComputedStyle(menu).display !== 'none';
       if (!visible) return;
@@ -1695,8 +1678,8 @@
 
   function logout() {
     clearToken();
-    try { localStorage.removeItem('wc_user_role'); } catch (e) {}
-    // Full page reload — matches production exactly
+    // Full page reload on logout — guarantees the next user starts with a
+    // completely clean slate (no stale React state, query cache, or injected DOM)
     window.location.reload();
   }
 
@@ -1723,7 +1706,6 @@
           saveToken(token);
           currentUser = user;
           window.__WC_USER = user;
-          publishUserRole(user);
           window.__WC_LOGOUT = logout;
           // Token valid — show app and inject UI elements
           if (root) root.style.display = "";
@@ -1742,6 +1724,16 @@
           } catch {}
           // Sync display name into field tech app header
           syncFieldTechName(user);
+          // Tell React Query that auth is ready so any queries that mounted
+          // and got 401'd before the token was validated can refetch.
+          // (Existing-session path: token was in localStorage at page load,
+          // so most queries should already have succeeded. This is defensive.)
+          try { window.__WC_AUTH_READY = true; } catch {}
+          try {
+            window.dispatchEvent(new CustomEvent('wc:auth-ready', {
+              detail: { user, at: Date.now(), source: 'bootstrap' }
+            }));
+          } catch {}
           // Inject Admin Tools nav for admin role only
           // Run at multiple intervals to survive React re-renders from hash restoration
           setTimeout(function() { injectAdminToolsNav(); injectRecordPaymentButtons(); injectRecordPaymentDetailPage(); }, 300);
@@ -1813,24 +1805,6 @@
   window.addEventListener('pagehide', _saveHash);
   window.addEventListener('beforeunload', _saveHash);
 
-  // ── bfcache guard ─────────────────────────────────────────────────────────
-  // If Safari restores this page from bfcache after a logout navigation,
-  // _token is still set in memory but localStorage is cleared.
-  // Force a full reload so bootstrap runs fresh and shows the login screen.
-  window.addEventListener('pageshow', function(e) {
-    if (e.persisted) {
-      // Page was restored from bfcache — check if token is gone from storage
-      const stored = (function() {
-        try { return localStorage.getItem('wc_auth_token') || sessionStorage.getItem('wc_auth_token'); } catch { return null; }
-      })();
-      if (!stored) {
-        // Token gone but bfcache restored old state — force fresh load
-        _token = null;
-        window.location.replace(window.location.pathname + '?lo=' + Date.now());
-      }
-    }
-  });
-
   // ── QB Login Nav Link (removed per user request) ─────────────────────────
 
   function canUseQBLogin() { return false; }
@@ -1850,10 +1824,8 @@
       : _qbSessionValid === true ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-left:auto"></span>' : '';
     const svgIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>';
 
-    // Mobile menu link — always inject regardless of sidebar presence.
-    // Require `.md:hidden` so the AI full-page results overlay (also
-    // `fixed top-[57px]`, but z-[90]/md:top-0) is never matched.
-    const mobileMenu = document.querySelector('.md\\:hidden.fixed.top-\\[57px\\]');
+    // Mobile menu link — always inject regardless of sidebar presence
+    const mobileMenu = document.querySelector('.fixed.top-\\[57px\\]');
     if (mobileMenu) {
       let mobileLink = document.getElementById('wc-qb-login-mobile');
       if (!mobileLink) {

@@ -1,5 +1,5 @@
-// cache-bust: 20260607-2212 wc-v208 prod-promote-admintools-flyout-techbar-removal
-const CACHE = "wc-v208";
+// cache-bust: 20260606-2106 wc-v190 prod-promote-qb-reconcile-sync
+const CACHE = "wc-v190";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
