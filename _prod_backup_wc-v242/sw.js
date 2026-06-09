@@ -1,5 +1,5 @@
-// cache-bust: 20260609-0210 wc-v243 fix login route-restore regression
-const CACHE = "wc-v243";
+// cache-bust: 20260609-0030 wc-v242 prod-promote v217-v242 (26 releases: customer sanitization, finance admin gate + audit, dashboard nav polish, past-due conflict resolution, diagnostic cleanup)
+const CACHE = "wc-v242";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
