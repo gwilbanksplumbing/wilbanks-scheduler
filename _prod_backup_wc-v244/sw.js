@@ -1,5 +1,5 @@
-// cache-bust: 20260609-0220 wc-v245 reset-dash-state-on-fresh-login
-const CACHE = "wc-v245";
+// cache-bust: 20260609-0215 wc-v244 force-reload-on-logout
+const CACHE = "wc-v244";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));

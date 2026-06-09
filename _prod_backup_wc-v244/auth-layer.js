@@ -16,7 +16,7 @@
   // token so the next app load lands on the login screen. Active in-flight
   // sessions aren't affected — this only fires on a fresh page load, after the
   // SW serves the new bundle. (Prod-only safety mechanism; not present on staging.)
-  const BUILD_VERSION = "wc-v245";
+  const BUILD_VERSION = "wc-v244";
   try {
     const prev = localStorage.getItem("wc_build_version");
     if (prev !== BUILD_VERSION) {
@@ -741,74 +741,11 @@
     }
   }
 
-  // wc-v245: Reset Dashboard view + filters on FRESH login.
-  // These prefs are server-stored (per-user) so the logout localStorage/
-  // sessionStorage sweep alone is not enough — without this, login restores
-  // the prior session's view mode (list) and filters (e.g. "Dexter Tanner").
-  // Resets: wc_dash_view→"calendar", wc_dash_tab→"active", all four
-  // wc_dash_*_filter keys cleared. wc_default_cal_view (the user's chosen
-  // calendar mode: month/week/day/tech) is NOT touched — the calendar still
-  // opens in their default mode. This runs ONLY in launchApp(), so existing-
-  // session refreshes (bootstrap path) preserve in-tab state as before.
-  async function resetDashStateOnFreshLogin() {
-    if (!_token) return;
-    try {
-      await _origFetch(API + "/api/user/preferences", {
-        method: "PUT",
-        headers: {
-          "Authorization": "Bearer " + _token,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prefs: {
-            wc_dash_view: "calendar",
-            wc_dash_tab: "active",
-            wc_dash_status_filter: null,
-            wc_dash_service_filter: null,
-            wc_dash_date_filter: null,
-            wc_dash_tech_filter: "all",
-          },
-        }),
-      });
-    } catch (e) {
-      // Best-effort — never block login if this fails. Server stays at prior
-      // values; user can clear filters manually.
-    }
-    // Also clear the wc-v222 pre-paint cache for THIS user so the next boot
-    // does not paint a stale dashboard view from cache before hydration.
-    try {
-      var uid = currentUser && (currentUser.id || currentUser.user_id);
-      if (uid != null) {
-        var cacheKey = "wc_prefs_cache_" + uid;
-        var raw = localStorage.getItem(cacheKey);
-        if (raw) {
-          try {
-            var c = JSON.parse(raw);
-            if (c && typeof c === "object") {
-              c.wc_dash_view = "calendar";
-              c.wc_dash_tab = "active";
-              delete c.wc_dash_status_filter;
-              delete c.wc_dash_service_filter;
-              delete c.wc_dash_date_filter;
-              c.wc_dash_tech_filter = "all";
-              localStorage.setItem(cacheKey, JSON.stringify(c));
-            }
-          } catch (e2) { /* ignore */ }
-        }
-      }
-    } catch (e3) { /* ignore */ }
-  }
-
-  async function launchApp() {
+  function launchApp() {
+    dismissOverlay();
     window.__WC_USER = currentUser;
     publishUserRole(currentUser);
     window.__WC_LOGOUT = logout;
-    // wc-v245: Reset dashboard view + filters BEFORE dismissOverlay so that
-    // when React hydrates prefs (triggered by wc:auth-ready fired inside
-    // dismissOverlay), the GET /preferences returns the already-reset state.
-    // We await so React never sees the stale values, even briefly.
-    await resetDashStateOnFreshLogin();
-    dismissOverlay();
     // wc-v243: A FRESH LOGIN must land on the default route. Do NOT restore
     // wc_last_hash here — that key is for the existing-session refresh path in
     // bootstrap() (same tab, same session, page reloaded). If it's still in
