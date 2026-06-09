@@ -19,9 +19,102 @@
       href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Outfit:wght@100..900&family=Oxanium:wght@200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap"
       rel="stylesheet"
     />
-    <script src="./auth-layer.js?v=wc-v216"></script>
-    <script type="module" crossorigin src="./assets/index-Cli3xRRc.js?v=wc-v216"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-C6RjI4QT.css?v=wc-v216">
+
+    <!-- wc-v222: Pre-paint theme application from per-user cache.
+         Reads wc_prefs_cache_<userId> (written by PreferencesProvider after
+         server hydration). Decodes user_id from the JWT payload — no
+         signature verification needed; we're only using it as a cache key,
+         not for auth. Default = dark. All paths fail closed to dark so a
+         missing/blocked storage layer never flashes light.
+         wc-v224b: FULLY STRICT per-tab login — sessionStorage only, no
+         localStorage fallback. A fresh tab will have no token here, fall
+         through to default-dark, and the login screen will render. -->
+    <script>
+      (function () {
+        document.documentElement.classList.add('dark');
+        try {
+          var token = sessionStorage.getItem('wc_auth_token');
+          if (!token) return;
+          var parts = token.split('.');
+          if (parts.length !== 3) return;
+          var b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          while (b64.length % 4) b64 += '=';
+          var payload = JSON.parse(atob(b64));
+          var uid = payload && (payload.id || payload.userId || payload.sub);
+          if (uid == null) return;
+          var cacheRaw = localStorage.getItem('wc_prefs_cache_' + uid);
+          if (!cacheRaw) return;
+          var cache = JSON.parse(cacheRaw);
+          if (cache && cache.wc_theme === 'light') {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) { /* storage blocked — stay on dark */ }
+      })();
+    </script>
+
+    <!--
+      ─────────────────────────────────────────────────────────────────────
+      Fresh-deploy auto-update (PROD) — wc-v224e
+      ─────────────────────────────────────────────────────────────────────
+      THE PROBLEM (esp. installed iOS PWAs): GitHub Pages serves index.html
+      with `cache-control: max-age=600`, and the service worker also caches
+      index.html + the hashed bundle. On iOS the installed PWA can keep serving
+      an OLD index.html (pointing at the OLD JS hash) across launches, so new
+      deploys never appear without a hard refresh or a delete/reinstall.
+
+      THE FIX: on every load, re-fetch index.html straight from the network
+      (no-store) and compare the live JS bundle hash against the one THIS page
+      loaded with. The JS hash changes on EVERY deploy, so this is a reliable
+      freshness signal.
+
+      When a newer hash is live we proactively (a) tell the active service
+      worker to drop its caches and (b) hard-reload once (guarded by
+      sessionStorage to prevent any loop). This updates installed iOS PWAs in
+      place — no delete/reinstall required.
+    -->
+    <script>
+      (function () {
+        // JS bundle hash this page actually loaded with (kept in sync at deploy).
+        var LOADED_JS = "index-B3IggoDm.js";
+        function clearSwCachesAndReload() {
+          var done = false;
+          function go() {
+            if (done) return; done = true;
+            location.reload();
+          }
+          try {
+            if ('caches' in window) {
+              caches.keys().then(function (keys) {
+                return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+              }).then(go, go);
+              // Safety: never hang on a stuck caches API.
+              setTimeout(go, 1500);
+            } else { go(); }
+          } catch (e) { go(); }
+        }
+        try {
+          var GUARD = "wc_autoreload_" + LOADED_JS;
+          if (sessionStorage.getItem(GUARD)) return; // already updated this session
+        } catch (e) { return; /* sessionStorage unavailable — fail open */ }
+        fetch(location.pathname, { cache: "no-store" })
+          .then(function (r) { return r.ok ? r.text() : null; })
+          .then(function (html) {
+            if (!html) return;
+            var m = html.match(/assets\/(index-[A-Za-z0-9_-]+\.js)/);
+            if (!m) return;
+            var liveJs = m[1];
+            if (liveJs && liveJs !== LOADED_JS) {
+              try { sessionStorage.setItem("wc_autoreload_" + LOADED_JS, "1"); } catch (e) {}
+              clearSwCachesAndReload();
+            }
+          })
+          .catch(function () { /* network hiccup — ignore, page still works */ });
+      })();
+    </script>
+
+    <script src="./auth-layer.js?v=wc-v242"></script>
+    <script type="module" crossorigin src="./assets/index-B3IggoDm.js?v=wc-v242"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BgE95S83.css?v=wc-v242">
     <style>
   html, body { background: #09090b; margin: 0; padding: 0; height: 100%; touch-action: none; }
   body { position: fixed; width: 100%; height: 100%; overflow: hidden; touch-action: none; }

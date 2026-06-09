@@ -16,7 +16,7 @@
   // token so the next app load lands on the login screen. Active in-flight
   // sessions aren't affected — this only fires on a fresh page load, after the
   // SW serves the new bundle. (Prod-only safety mechanism; not present on staging.)
-  const BUILD_VERSION = "wc-v242";
+  const BUILD_VERSION = "wc-v216";
   try {
     const prev = localStorage.getItem("wc_build_version");
     if (prev !== BUILD_VERSION) {
@@ -26,7 +26,6 @@
       try { localStorage.setItem("wc_build_version", BUILD_VERSION); } catch {}
     }
   } catch {}
-
   const USERNAME_KEY = "wc_saved_username";
   const WEBAUTHN_PROMPT_KEY = "wc_webauthn_prompted"; // so we only ask once
   const WEBAUTHN_VALID_KEY = "wc_webauthn_valid"; // set after a successful Face ID login
@@ -47,33 +46,16 @@
   function saveToken(token) {
     _token = token;
     try {
-      if (isFieldApp()) {
-        // Field tech app — PWA, single-tenant, single-user-per-device. localStorage
-        // primary so the session survives iOS Safari tab suspension + home-screen relaunch.
-        localStorage.setItem(TOKEN_KEY, token);
-      } else {
-        // Dashboard (wc-v224b: FULLY STRICT per-tab login).
-        //   sessionStorage only — each tab is its own session, no inheritance.
-        //   Every new tab forces a fresh login. Hard refresh keeps the session
-        //   (sessionStorage survives reloads). Closing the tab ends the session.
-        sessionStorage.setItem(TOKEN_KEY, token);
-        // Defensive: nuke any stale localStorage seed from a prior wc-v224 boot.
-        try { localStorage.removeItem(TOKEN_KEY); } catch {}
-      }
+      // Use localStorage for both apps so JWT survives iOS Safari suspending the tab.
+      // The server enforces the 30-day expiry, so this is safe.
+      localStorage.setItem(TOKEN_KEY, token);
     } catch {}
   }
   function loadToken() {
     if (_token) return _token;
     try {
-      if (isFieldApp()) {
-        _token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || null;
-      } else {
-        // Dashboard: sessionStorage only. No localStorage fallback — strict per-tab.
-        _token = sessionStorage.getItem(TOKEN_KEY) || null;
-        // Defensive: if a stale localStorage seed survived from an earlier
-        // wc-v224 build, drop it. We do NOT use it.
-        try { if (localStorage.getItem(TOKEN_KEY)) localStorage.removeItem(TOKEN_KEY); } catch {}
-      }
+      // Check localStorage first, fall back to sessionStorage for legacy sessions
+      _token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || null;
     } catch {}
     return _token;
   }
@@ -717,8 +699,7 @@
       // authenticated (WEBAUTHN_VALID_KEY not set) — wipe and re-prompt
       const stale = (hasWebAuthn || alreadyPrompted) && !credentialValid;
       if (stale) {
-        // wc-v224: prefer in-memory; fall back to either storage tier.
-        const tok = _token || sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || '';
+        const tok = _token || localStorage.getItem(TOKEN_KEY) || '';
         const wipe = tok
           ? _origFetch(API + '/api/auth/webauthn', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + tok } }).catch(() => {})
           : Promise.resolve();
@@ -1713,48 +1694,10 @@
   }
 
   function logout() {
-    // wc-v219: full cleanup so next user lands fresh on default route
-    // wc-v222: also clears wc_prefs_cache_* (per-user pre-paint cache) and
-    //         the legacy hyphenated wc-theme key.
-    // wc-v224: parallel sweep of sessionStorage wc_* keys (Phase 1 per-tab
-    //         session isolation — sessionStorage is now the source of truth
-    //         for the dashboard's active session).
-    // Clear hash + saved hash so we don't restore prior admin's last screen
-    try { sessionStorage.removeItem('wc_last_hash'); } catch (e) {}
-    try { window.location.hash = ''; } catch (e) {}
-    // Sweep all wc_* localStorage keys EXCEPT wc_saved_username (remember me).
-    // Also catch the hyphenated legacy `wc-theme` key (does not match wc_*).
-    try {
-      var preserve = { 'wc_saved_username': 1 };
-      var toRemove = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (!k) continue;
-        // wc_* (underscore) — original sweep
-        if (k.indexOf('wc_') === 0 && !preserve[k]) { toRemove.push(k); continue; }
-        // wc-theme (hyphen) — legacy per-device theme key; safe to drop, the
-        // pre-paint inline script now reads from wc_prefs_cache_<uid>.
-        if (k === 'wc-theme') { toRemove.push(k); continue; }
-      }
-      for (var j = 0; j < toRemove.length; j++) localStorage.removeItem(toRemove[j]);
-    } catch (e) {}
-    // wc-v224: parallel sessionStorage sweep — wc_* keys in this tab only.
-    // Other tabs are unaffected; their sessionStorage is isolated.
-    try {
-      var ssRemove = [];
-      for (var si = 0; si < sessionStorage.length; si++) {
-        var sk = sessionStorage.key(si);
-        if (!sk) continue;
-        if (sk.indexOf('wc_') === 0) ssRemove.push(sk);
-      }
-      for (var sj = 0; sj < ssRemove.length; sj++) sessionStorage.removeItem(ssRemove[sj]);
-    } catch (e) {}
-    // Clear field-tech session marker as well
-    try { sessionStorage.removeItem('techName'); } catch (e) {}
     clearToken();
+    try { localStorage.removeItem('wc_user_role'); } catch (e) {}
     // Full page reload — matches production exactly
-    // Navigate to root so reload lands on default landing screen
-    try { window.location.replace(window.location.pathname + window.location.search); } catch (e) { window.location.reload(); }
+    window.location.reload();
   }
 
   // Expose logout globally
@@ -1782,12 +1725,6 @@
           window.__WC_USER = user;
           publishUserRole(user);
           window.__WC_LOGOUT = logout;
-          // wc-v224 fix: fire the auth-ready signal on existing-session boot
-          // too (previously only fired from launchApp() on fresh login). The
-          // useCurrentUser hook depends on this; without it, the user badge
-          // stays blank on any tab that boots via seed-hop or hard refresh.
-          window.__WC_AUTH_READY = true;
-          try { window.dispatchEvent(new CustomEvent("wc:auth-ready")); } catch {}
           // Token valid — show app and inject UI elements
           if (root) root.style.display = "";
           // Restore the hash route from before the refresh
@@ -1884,13 +1821,7 @@
     if (e.persisted) {
       // Page was restored from bfcache — check if token is gone from storage
       const stored = (function() {
-        // wc-v224b: dashboard is sessionStorage-only; field-tech keeps localStorage.
-        try {
-          if (isFieldApp()) {
-            return localStorage.getItem('wc_auth_token') || sessionStorage.getItem('wc_auth_token');
-          }
-          return sessionStorage.getItem('wc_auth_token');
-        } catch { return null; }
+        try { return localStorage.getItem('wc_auth_token') || sessionStorage.getItem('wc_auth_token'); } catch { return null; }
       })();
       if (!stored) {
         // Token gone but bfcache restored old state — force fresh load
