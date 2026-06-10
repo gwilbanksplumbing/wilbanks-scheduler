@@ -1,5 +1,5 @@
-// cache-bust: 20260610-2025 wc-v269b prod promote: tech edit dialog no longer sends `active` field + confirm dialog on per-tech active toggle (prevents one-tap accidental deactivation)
-const CACHE = "wc-v269b";
+// cache-bust: 20260610-2031 wc-v269c prod hotfix: alias lucide Map -> MapIcon in Sidebar (was crashing entire app with "ly is not a constructor" — minifier collapsed `new Map()` into icon constructor)
+const CACHE = "wc-v269c";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
