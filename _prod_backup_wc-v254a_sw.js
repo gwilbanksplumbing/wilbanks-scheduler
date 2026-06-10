@@ -1,5 +1,5 @@
-// cache-bust: 20260610-2025 wc-v269b prod promote: tech edit dialog no longer sends `active` field + confirm dialog on per-tech active toggle (prevents one-tap accidental deactivation)
-const CACHE = "wc-v269b";
+// cache-bust: 20260609-2155 wc-v254a prod promote v246..v254 + strip legacy `main { padding-top:0 !important; left:256px !important }` inline override that fought v251 brand-band layout and hid Manage Schedule header on prod
+const CACHE = "wc-v254a";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
