@@ -1,5 +1,5 @@
-// cache-bust: 20260609-0220 wc-v245 reset-dash-state-on-fresh-login
-const CACHE = "wc-v245";
+// cache-bust: 20260609-2155 wc-v254a prod promote v246..v254 + strip legacy `main { padding-top:0 !important; left:256px !important }` inline override that fought v251 brand-band layout and hid Manage Schedule header on prod
+const CACHE = "wc-v254a";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
