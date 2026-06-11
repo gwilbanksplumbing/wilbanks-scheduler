@@ -1,5 +1,5 @@
-// cache-bust: 20260610-2302 wc-v270p prod promote: Customer card overhaul (Completed/Open clickable count pills, card body no longer click-to-expand, working chevron "show all" toggle) + tech avatar pipeline Phases A-D (photos in chips/Settings/Tech-view/Map side-list+popups+pins, R2 custom-domain assets) + SaaS asset-host refactor. Server already live at wc-v270k (History/PDF job-match + Outstanding-tile balance-due fixes).
-const CACHE = "wc-v270p"; // promote 2026-06-10: customer-card affordances (wc-v270o/p) + tech avatars A-D (wc-v270h-m) + asset-host refactor (wc-v270n); server wc-v270k already live
+// cache-bust: 20260611-0942 wc-v270r prod promote: HOTFIX for the live List-view crash "Cannot read properties of null (reading 'replace')". usePreference get() now falls back to default for a null-persisted pref (statusFilter was null -> Dashboard.tsx:2002 statusFilter.replace crashed the whole app). Confirmed via source-map decode of the live stack trace + isolated test; verified on staging. Also carries the harmless wc-v270q global-search null-coalescing. New JS index-D2ijUvMb.js (CSS index-D4OTVTTE.css unchanged). auth-layer.js BUILD_VERSION untouched (wc-v254a).
+const CACHE = "wc-v270r"; // prod hotfix 2026-06-11: null-pref List-view crash fix (+ wc-v270q global-search hardening)
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
