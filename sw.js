@@ -1,5 +1,5 @@
-// cache-bust: 20260611-0942 wc-v270r prod promote: HOTFIX for the live List-view crash "Cannot read properties of null (reading 'replace')". usePreference get() now falls back to default for a null-persisted pref (statusFilter was null -> Dashboard.tsx:2002 statusFilter.replace crashed the whole app). Confirmed via source-map decode of the live stack trace + isolated test; verified on staging. Also carries the harmless wc-v270q global-search null-coalescing. New JS index-D2ijUvMb.js (CSS index-D4OTVTTE.css unchanged). auth-layer.js BUILD_VERSION untouched (wc-v254a).
-const CACHE = "wc-v270r"; // prod hotfix 2026-06-11: null-pref List-view crash fix (+ wc-v270q global-search hardening)
+// cache-bust: 20260612-1834 wc-prod-v1: Promote staging wc-v276 -> prod. Bundle-swap only (index-BqBdUlwk.js / index-BFQRDnJN.css). Carries v271-v276: status-pill legend-match colors, AppointmentDetail 15s poll + focus-refetch, detail-pill overlays fresh calendar-list copy (no lag vs month chip), Settings IA overhaul, Dispatcher Notes on Day-view chips. auth-layer.js BUILD_VERSION untouched (wc-v254a). Verified staging bundle byte-identical to src build.
+const CACHE = "wc-prod-v1";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
