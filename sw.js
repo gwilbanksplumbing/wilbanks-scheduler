@@ -1,5 +1,5 @@
-// cache-bust: 20260613-1830 wc-prod-v2: Promote staging wc-v278..v292 -> prod. Bundle-swap only (index-BYeSUEHy.js / index-DVFzr4l9.css). Carries: estimate/invoice card rework (v278-v286), single-invoice-door enforcement (v287-v290: invoices minted ONLY via Ready-to-Invoice, card=View+Resend, builder estimate-only, HVAC Convert routes to one send flow), calendar hide-completed-jobs toggle (v291), and admin-only Void & re-bill action (v292). Shared server already carries invoice-lock 409 guards + QB blank-tab URL fix + void-invoice endpoint. auth-layer.js BUILD_VERSION untouched (wc-v254a). Staging bundle verified byte-identical to src build.
-const CACHE = "wc-prod-v2";
+// cache-bust: 20260613-1900 wc-prod-v3: Promote staging wc-v293..v293b -> prod. Bundle-swap only (index-CoRKHDaa.js / index-hvC_Rh4Z.css; CSS hash changed this cycle). Carries: map duplicate-row client dedupe (v293), Map View date-picker now CLOSES on day select (v293a), and calendar HOVER + selected/today restyling app-wide (v293b: hovered day stands out, selected = bold orange fill+ring, today = subtle outline ring). Shared server already carries the map effective-date fix (wc-v294: completed jobs map to completed_at day, not scheduled day). auth-layer.js BUILD_VERSION untouched (wc-v254a). Staging bundle verified byte-identical to src build.
+const CACHE = "wc-prod-v3";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
