@@ -1,5 +1,5 @@
-// cache-bust: 20260612-1834 wc-prod-v1: Promote staging wc-v276 -> prod. Bundle-swap only (index-BqBdUlwk.js / index-BFQRDnJN.css). Carries v271-v276: status-pill legend-match colors, AppointmentDetail 15s poll + focus-refetch, detail-pill overlays fresh calendar-list copy (no lag vs month chip), Settings IA overhaul, Dispatcher Notes on Day-view chips. auth-layer.js BUILD_VERSION untouched (wc-v254a). Verified staging bundle byte-identical to src build.
-const CACHE = "wc-prod-v1";
+// cache-bust: 20260613-1830 wc-prod-v2: Promote staging wc-v278..v292 -> prod. Bundle-swap only (index-BYeSUEHy.js / index-DVFzr4l9.css). Carries: estimate/invoice card rework (v278-v286), single-invoice-door enforcement (v287-v290: invoices minted ONLY via Ready-to-Invoice, card=View+Resend, builder estimate-only, HVAC Convert routes to one send flow), calendar hide-completed-jobs toggle (v291), and admin-only Void & re-bill action (v292). Shared server already carries invoice-lock 409 guards + QB blank-tab URL fix + void-invoice endpoint. auth-layer.js BUILD_VERSION untouched (wc-v254a). Staging bundle verified byte-identical to src build.
+const CACHE = "wc-prod-v2";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
