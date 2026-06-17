@@ -1,5 +1,5 @@
-// cache-bust: 20260614-160709 wc-prod-v4 prod promote: bundle index-ClK6eIvb.js / index-hvC_Rh4Z.css (from index-CoRKHDaa.js). auth-layer.js untouched.
-const CACHE = "wc-prod-v4";
+// cache-bust: 20260617-020500 wc-prod-v5 prod promote: QB invoice notes->CustomerMemo + ready-gated tab open (no blank-tab auto-open; one-click 'Open in QuickBooks' when QB index not warm). bundle index-CjgSd2LL.js / index-hvC_Rh4Z.css (from index-ClK6eIvb.js). auth-layer.js untouched.
+const CACHE = "wc-prod-v5";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
