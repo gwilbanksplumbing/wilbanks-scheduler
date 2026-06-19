@@ -1,5 +1,5 @@
-// cache-bust: 20260619-174400 wc-prod-v7 prod promote (from staging wc-v299-addnew): New Job customer search always shows a "+ Add a new customer" row at the bottom of results (not only on zero matches), so a commercial bill-to (e.g. Tommy Pratt under Gardner Landscaping) can be added as their own customer; opens the Residential/Commercial type popup and pre-fills the typed text. Plus prior wc-v298 New Contact type picker + wc-v297 commercial-first card ordering. bundle index-UKGB5QQ0.js / index-hvC_Rh4Z.css (from index-CZXHMJLP.js). auth-layer.js untouched. Revert tag: prod-pre-addnew-20260619-174400 @ c7f006c.
-const CACHE = "wc-prod-v7";
+// cache-bust: 20260619-234800 wc-prod-v8 prod promote (from staging wc-v301-invrelink): Convert to Invoice now self-heals when a QB invoice already exists/was deleted. On invoice_already_exists, the app calls POST /api/qb-invoice-relink to resolve the existing QB invoice by number, stamp full QB linkage + status onto the appointment (job leaves "Ready to Invoice"), and opens that exact invoice via a working "Open Invoice" toast link. Server-side (already on Railway) self-heals a stale lock when the invoice was deleted in QB. Plus prior v300 popup-safe success toast. bundle index-Br4IR-yq.js / index-hvC_Rh4Z.css (CSS unchanged). auth-layer.js untouched. Revert tag: prod-pre-invrelink-20260619-234752 @ c736bff9.
+const CACHE = "wc-prod-v8";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
