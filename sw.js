@@ -1,5 +1,5 @@
-// cache-bust: 20260617-020500 wc-prod-v5 prod promote: QB invoice notes->CustomerMemo + ready-gated tab open (no blank-tab auto-open; one-click 'Open in QuickBooks' when QB index not warm). bundle index-CjgSd2LL.js / index-hvC_Rh4Z.css (from index-ClK6eIvb.js). auth-layer.js untouched.
-const CACHE = "wc-prod-v5";
+// cache-bust: 20260619-172300 wc-prod-v6 prod promote (from staging wc-v298-custtype): New Contact form required Residential/Commercial type picker (commercial = company name primary identity + contact/bill-to person, both required; residential = person name is identity source) + explicit customer_type so server scopes duplicate check by type (commercial bill-to can also be created as their own residential customer) + commercial-first appointment card name ordering. bundle index-CZXHMJLP.js / index-hvC_Rh4Z.css (from index-CjgSd2LL.js). auth-layer.js untouched. Revert tag: prod-pre-custtype-20260619-172300 @ 56fdb24.
+const CACHE = "wc-prod-v6";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
