@@ -1,5 +1,5 @@
-// cache-bust: 20260714-142700 wc-prod-v12 prod promote (from staging wc-staging-sendtoast-20260714-141500): send toast now shows the server-resolved recipient (sentTo) so every estimate/invoice send visibly confirms which address it emailed. Pairs with server wc-v311 (live send-to), wc-v312 (Bill To live email), wc-v313 (sentTo in response). JS+CSS swap (index-BdmJF5_P.js); auth-layer.js untouched (wc-v254a). Server revert tag: prod-pre-sendtoast-20260714-142102.
-const CACHE = "wc-prod-v12";
+// cache-bust: 20260714-153800 wc-prod-v13 prod promote (from staging wc-staging-descformat-20260714-150800): line-item description formatting preserved (white-space:pre-wrap) in client legacy builders; the authoritative preview/email is server-rendered (wc-v314 in routes.ts, already live). bundle index-D7MK95F8.js; auth-layer.js untouched (wc-v254a). Server revert tag: prod-pre-descformat-20260714-151214.
+const CACHE = "wc-prod-v13";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
