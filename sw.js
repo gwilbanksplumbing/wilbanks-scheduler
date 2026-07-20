@@ -1,5 +1,5 @@
-// cache-bust: wc-prod-v17 prod promote (from staging wc-staging-multiline-invoice-20260720-215458): QB plumbing invoice multi-line send + redirect to QB invoices list + $ toast copy. Server-side collapse decision live (HEAD 771f7d66). bundle index-C4Y7eYe2.js.
-const CACHE = "wc-prod-v17";
+// cache-bust: wc-prod-v18 prod promote (from staging wc-staging-paid-multiline-20260720-232744): paid-in-full QB invoice mirrors preview (collapse vs itemize). Server HEAD b74b3f3f. bundle index-NOyLMXQa.js.
+const CACHE = "wc-prod-v18";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
