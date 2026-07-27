@@ -1,5 +1,5 @@
-// cache-bust: wc-prod-v18 prod promote (from staging wc-staging-paid-multiline-20260720-232744): paid-in-full QB invoice mirrors preview (collapse vs itemize). Server HEAD b74b3f3f. bundle index-NOyLMXQa.js.
-const CACHE = "wc-prod-v18";
+// cache-bust: wc-prod-v19 booking-screen duplicate-customer warning (typed name + '+ New customer' fuzzy match) + clean duplicate-customer create message. bundle index-BQ-ZRcR4.js. Server HEAD bc7b4046.
+const CACHE = "wc-prod-v19";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
