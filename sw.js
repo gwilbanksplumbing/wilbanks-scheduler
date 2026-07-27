@@ -1,5 +1,5 @@
-// cache-bust: wc-prod-v19 booking-screen duplicate-customer warning (typed name + '+ New customer' fuzzy match) + clean duplicate-customer create message. bundle index-BQ-ZRcR4.js. Server HEAD bc7b4046.
-const CACHE = "wc-prod-v19";
+// cache-bust: wc-prod-v20 PROD: Multi-Day/Multi-Hour toggle honors same-day custom durations on BOTH new + edit screens (sends spanOverride). An 8:00 AM-12:00 PM block saves the full span; toggle off still enforces the 2h Scheduling setting. bundle index-CupxxRJi.js.
+const CACHE = "wc-prod-v20";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
