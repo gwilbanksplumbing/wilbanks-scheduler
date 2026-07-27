@@ -1,5 +1,5 @@
-// cache-bust: wc-prod-v21 PROD: bulk customer import wizard. Two-phase preview/apply; clean new rows auto-add (collapsed), only duplicates / in-file dups / invalid need review. Bulk dup links skip/merge (no bulk overwrite); overwrite per-row only. Template + Import File buttons + hint on Customers screen. bundle index-CsvE1ovJ.js.
-const CACHE = "wc-prod-v21";
+// cache-bust: wc-prod-v22 prod: all 4 Customers action buttons neutral, fill primary-blue on hover.
+const CACHE = "wc-prod-v22";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
