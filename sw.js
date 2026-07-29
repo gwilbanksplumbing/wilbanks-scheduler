@@ -1,5 +1,5 @@
-// cache-bust: wc-prod-v22 prod: all 4 Customers action buttons neutral, fill primary-blue on hover.
-const CACHE = "wc-prod-v22";
+// cache-bust wc-prod-v23 20260729-205655 — QB invoice links + lookup panel + Resend fix
+const CACHE = "wc-prod-v23";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
