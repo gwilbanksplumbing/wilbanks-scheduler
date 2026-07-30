@@ -1,5 +1,5 @@
-// cache-bust wc-prod-v23 20260729-205655 — QB invoice links + lookup panel + Resend fix
-const CACHE = "wc-prod-v23";
+// cache-bust wc-prod-v24 20260730-024848 — Book Date age on calendar chips + ring driven by real slip
+const CACHE = "wc-prod-v24";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
