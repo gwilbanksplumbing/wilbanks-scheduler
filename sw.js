@@ -1,5 +1,5 @@
 // cache-bust wc-prod-v25 20260730-134328 — chip badge reports calendar AGE, not slip
-const CACHE = "wc-prod-v26";
+const CACHE = "wc-prod-v27";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
