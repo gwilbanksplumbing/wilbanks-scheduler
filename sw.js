@@ -1,5 +1,5 @@
 // cache-bust wc-prod-v28 20261021-201741 — Financials business names, Partial from amounts, cumulative Record Payment
-const CACHE = "wc-prod-v29";
+const CACHE = "wc-prod-v30";
 const OFFLINE = ["/", "/index.html"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE)));
